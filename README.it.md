@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/brand/banner.png" alt="FlowPilot" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Rocco3D/FlowPilot/main/assets/brand/banner.png" alt="FlowPilot" width="100%"></p>
 
 <p align="center"><a href="README.md">English</a> &nbsp;|&nbsp; <b>Italiano</b></p>
 
@@ -18,17 +18,15 @@ FlowPilot è un servizio locale che controlla Google Flow (generazione di immagi
 
 ## Installazione
 
-FlowPilot non è ancora su npm. Installalo da GitHub con un solo comando (il repository potrebbe essere privato: in tal caso serve l'accesso a GitHub, ad esempio `gh` autenticato o un token):
-
 ```bash
-npm install -g github:Rocco3D/FlowPilot
+npm install -g flowpilot-cli
 ```
 
 Oppure installalo dal codice sorgente:
 
 ```bash
-git clone https://github.com/anthropics/flowpilot.git
-cd flowpilot
+git clone https://github.com/Rocco3D/FlowPilot.git
+cd FlowPilot
 npm install
 npm run build
 npm link
@@ -276,4 +274,4 @@ Il codice e la documentazione sono rilasciati con licenza MIT, vedi `LICENSE`.
 
 FlowPilot è partito da [gflow-cli](https://github.com/swissmarley/gflow-cli) di swissmarley (licenza MIT) e ne ha preso ispirazione: è il progetto che ha mostrato come controllare Google Flow attraverso una vera sessione di Chrome già collegata. Parte del codice della sessione del browser e dell'automazione di Flow deriva da lì; vedi [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-<p align="center"><img src="assets/brand/rocco-logo.png" alt="Rocco logo" height="40" align="absmiddle">&nbsp;<b>Rocco™</b></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Rocco3D/FlowPilot/main/assets/brand/rocco-logo.png" alt="Rocco logo" height="40" align="absmiddle">&nbsp;<b>Rocco™</b></p>
