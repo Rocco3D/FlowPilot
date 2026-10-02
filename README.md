@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/brand/banner.png" alt="FlowPilot" width="100%"></p>
+
 # FlowPilot
 
 [Leggi in italiano](README.it.md)
@@ -261,3 +263,9 @@ FlowPilot is unofficial. It is not affiliated with or endorsed by Google. It aut
 ## License
 
 MIT, see `LICENSE`.
+
+## Credits
+
+FlowPilot started from and was inspired by [gflow-cli](https://github.com/swissmarley/gflow-cli) by swissmarley (MIT License), which showed how to drive Google Flow through a real, signed-in Chrome session. Parts of the browser session and Flow automation code are derived from it; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+<p align="center"><img src="assets/brand/rocco-logo.png" alt="Rocco logo" height="40" align="absmiddle">&nbsp;<b>Rocco™</b></p>
