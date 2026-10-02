@@ -116,6 +116,21 @@ describe("JobQueue", () => {
     );
   });
 
+  it("logs FlowPilotError failures with id, code and message", async () => {
+    const driver: FlowDriver = Object.create(new FakeDriver()) as FlowDriver;
+    driver.run = () =>
+      Promise.reject(new FlowPilotError("references_not_attached", "flow.refs.dialogNotOpen"));
+    const error = vi.fn();
+    const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error };
+    const queue = new JobQueue(driver, new JobStore(dir), logger);
+    const job = await queue.waitFor(queue.enqueue(req).id);
+    expect(error).toHaveBeenCalledWith("job failed", {
+      id: job.id,
+      code: "references_not_attached",
+      message: job.error?.message,
+    });
+  });
+
   it("cancels a queued job but not a running one", async () => {
     const queue = new JobQueue(new FakeDriver({ delayMs: 30 }), new JobStore(dir));
     const first = queue.enqueue(req);

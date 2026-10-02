@@ -251,6 +251,38 @@ async function pickFrame(page: Page, file: string, opts: UploadOptions): Promise
   });
 }
 
+/**
+ * Attaches an ingredient with the add-ingredients button. Image mode opens the "Add assets"
+ * dialog; video mode opens the same panel as the frame slots. Both are handled.
+ */
+async function addIngredient(page: Page, file: string, opts: UploadOptions): Promise<void> {
+  await clickRobust(selectors.addIngredientsButton.locate(page));
+  const panel = framePanel(page);
+  const dialog = selectors.mediaDialog.locate(page).first();
+  await panel
+    .or(dialog)
+    .first()
+    .waitFor({ state: "visible", timeout: 10_000 })
+    .catch(() => {
+      throw new FlowPilotError("references_not_attached", "flow.refs.dialogNotOpen");
+    });
+  if (await panel.isVisible().catch(() => false)) {
+    try {
+      await pickFrame(page, file, opts);
+    } catch (error) {
+      await closeFramePanel(page);
+      throw error;
+    }
+    return;
+  }
+  await selectors.mediaDialogLoading
+    .locate(page)
+    .first()
+    .waitFor({ state: "hidden", timeout: 15_000 })
+    .catch(() => undefined);
+  await uploadAndConfirm(page, dialog, file, opts);
+}
+
 /** Picks a saved character: category filter, search by name, click the matching asset. */
 async function addCharacter(page: Page, name: string): Promise<void> {
   const d = await openAddMediaDialog(page);
@@ -303,7 +335,7 @@ export async function attachReferences(
     if (!(await fillFrame(page, slot, file, opts))) skipped.push(slot);
   }
   for (const file of plan.ingredients) {
-    await uploadAndConfirm(page, await openAddMediaDialog(page), file, opts);
+    await addIngredient(page, file, opts);
   }
   for (const name of plan.characters) await addCharacter(page, name);
 
