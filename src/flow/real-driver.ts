@@ -28,7 +28,11 @@ const MODEL_CACHE_MS = 60 * 60_000;
 export class RealFlowDriver implements FlowDriver {
   private models: { at: number; list: ModelInfo[] } | undefined;
 
-  constructor(private readonly session: BrowserSession = new BrowserSession()) {}
+  constructor(
+    private readonly session: BrowserSession = new BrowserSession({
+      headed: loadConfig().showBrowser,
+    }),
+  ) {}
 
   async doctor(): Promise<SessionStatus> {
     const status = await this.session.status();
@@ -105,8 +109,9 @@ export class RealFlowDriver implements FlowDriver {
     return { results, credits: cost };
   }
 
-  async close(): Promise<void> {
-    await this.session.close();
+  async close(options: { closeBrowser?: boolean } = {}): Promise<void> {
+    if (options.closeBrowser) await this.session.closeBrowser();
+    else await this.session.close();
   }
 
   /** Opens the named project, else the most recent one, else a new one. */

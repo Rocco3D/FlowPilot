@@ -75,6 +75,8 @@ export default {
   "config.keyArgument": "Configuration key",
   "config.valueArgument": "New value",
   "mcp.description": "Start the MCP server over stdio for AI assistants",
+  "stop.description": "Stop the service and close the automation Chrome",
+  "stop.done": "FlowPilot stopped: service and browser are closed",
   "service.description": "Manage the local FlowPilot service",
   "service.startDescription": "Start the service",
   "service.stopDescription": "Stop the service",

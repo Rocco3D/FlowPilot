@@ -8,19 +8,27 @@ import { loadConfig } from "./config.js";
 import { JobStore } from "./jobs.js";
 import { createLogger } from "./logger.js";
 import { dataDir as defaultDataDir } from "./paths.js";
-import { JobQueue } from "./queue.js";
+import { JobQueue, TERMINAL } from "./queue.js";
+
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 export interface ServiceOptions {
   driver: FlowDriver;
   configDir?: string;
   dataDir?: string;
   port?: number;
+  /** Called once the service has stopped after a shutdown request, signal or idle timeout. */
+  onExit?: () => void;
+  /** Overrides `idleMinutes` (in milliseconds); for tests. */
+  idleMs?: number;
 }
 
 export interface RunningService {
   port: number;
   url: string;
   stop(): Promise<void>;
+  /** Stops everything, then calls `onExit`; calls it anyway after 10 s. */
+  shutdown(): void;
 }
 
 export interface ServiceInfo {
@@ -45,19 +53,48 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
   const logger = createLogger({ dir: path.join(dataDir, "logs"), level: config.logLevel });
 
   let stopping: Promise<void> | undefined;
+  let idleTimer: NodeJS.Timeout | undefined;
   const stop = (): Promise<void> => {
     stopping ??= (async () => {
+      clearTimeout(idleTimer);
       await new Promise<void>((resolve) => {
         server.close(() => resolve());
         server.closeAllConnections();
       });
       await queue.stop();
-      await driver.close();
+      await driver.close({ closeBrowser: true });
       fs.rmSync(infoFile(dataDir), { force: true });
       logger.info("service stopped");
     })();
     return stopping;
   };
+
+  let shuttingDown = false;
+  const shutdown = (): void => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    const exit = () => options.onExit?.();
+    const force = setTimeout(exit, SHUTDOWN_TIMEOUT_MS);
+    void stop()
+      .catch(() => undefined)
+      .then(() => {
+        clearTimeout(force);
+        exit();
+      });
+  };
+
+  const idleMs = options.idleMs ?? config.idleMinutes * 60_000;
+  const touch = (): void => {
+    if (idleMs <= 0 || stopping) return;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (store.list().some((j) => !TERMINAL.includes(j.status))) return touch();
+      logger.info("idle shutdown");
+      shutdown();
+    }, idleMs);
+    idleTimer.unref();
+  };
+  queue.on("job", touch);
 
   const server: Server = createHttpServer({
     driver,
@@ -68,7 +105,8 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
     dataDir,
     version,
     logger,
-    onShutdown: () => void stop(),
+    onShutdown: shutdown,
+    onActivity: touch,
   });
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
@@ -81,7 +119,8 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
   fs.mkdirSync(dataDir, { recursive: true });
   fs.writeFileSync(infoFile(dataDir), JSON.stringify(info));
   logger.info("service started", { port });
-  return { port, url: `http://127.0.0.1:${port}`, stop };
+  touch();
+  return { port, url: `http://127.0.0.1:${port}`, stop, shutdown };
 }
 
 export function readServiceInfo(dataDir: string = defaultDataDir()): ServiceInfo | undefined {

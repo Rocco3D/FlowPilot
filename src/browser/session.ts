@@ -254,4 +254,11 @@ export class BrowserSession {
     this.browser = undefined;
     await browser?.close();
   }
+
+  /** Disconnects, then quits this profile's Chrome gracefully so cookies are saved. */
+  async closeBrowser(): Promise<void> {
+    await this.close();
+    const running = await findChromeProcesses(this.profileDir);
+    if (running.length > 0) await closeChromeGracefully(running);
+  }
 }

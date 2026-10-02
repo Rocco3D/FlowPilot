@@ -5,7 +5,7 @@ import { FlowPilotError } from "./errors.js";
 import type { JobStore } from "./jobs.js";
 import type { Job, JobRequest, JobStatus } from "./schemas.js";
 
-const TERMINAL: JobStatus[] = ["done", "failed", "cancelled", "interrupted"];
+export const TERMINAL: JobStatus[] = ["done", "failed", "cancelled", "interrupted"];
 
 export class JobQueue extends EventEmitter {
   private processing: Promise<void> | undefined;

@@ -75,6 +75,8 @@ export default {
   "config.keyArgument": "Chiave di configurazione",
   "config.valueArgument": "Nuovo valore",
   "mcp.description": "Avvia il server MCP su stdio per gli assistenti IA",
+  "stop.description": "Arresta il servizio e chiudi il Chrome di automazione",
+  "stop.done": "FlowPilot arrestato: servizio e browser sono chiusi",
   "service.description": "Gestisci il servizio FlowPilot locale",
   "service.startDescription": "Avvia il servizio",
   "service.stopDescription": "Arresta il servizio",

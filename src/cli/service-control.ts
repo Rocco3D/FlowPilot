@@ -3,10 +3,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { FlowPilotError } from "../core/errors.js";
-import { dataDir } from "../core/paths.js";
+import { closeChromeGracefully, findChromeProcesses } from "../browser/processes.js";
+import { dataDir, profileDir } from "../core/paths.js";
+import { isServiceAlive, readServiceInfo, type ServiceInfo } from "../core/service.js";
 import type { Client } from "./client.js";
 
 const START_TIMEOUT_MS = 15_000;
+const STOP_TIMEOUT_MS = 15_000;
 const POLL_MS = 250;
 
 export interface ServiceStatus {
@@ -55,6 +58,38 @@ export async function stopService(client: Client): Promise<boolean> {
   if (!(await isUp(client))) return false;
   await client.shutdown();
   return true;
+}
+
+export interface StopDeps {
+  /** Whether the service process is still running (default: signal 0). */
+  isAlive?: (info: ServiceInfo) => boolean;
+  /** Force-kills the service process (default: SIGKILL). */
+  kill?: (pid: number) => void;
+  /** Gracefully closes the FlowPilot profile's Chrome, if running. */
+  closeBrowser?: () => Promise<void>;
+  timeoutMs?: number;
+  pollMs?: number;
+}
+
+async function closeProfileChrome(): Promise<void> {
+  const running = await findChromeProcesses(profileDir());
+  if (running.length > 0) await closeChromeGracefully(running);
+}
+
+/** Stops the service, waits for its process to exit, then closes the profile's Chrome. */
+export async function stopEverything(client: Client, deps: StopDeps = {}): Promise<boolean> {
+  const { isAlive = isServiceAlive, kill = (pid) => process.kill(pid, "SIGKILL") } = deps;
+  const stopped = await stopService(client);
+  const info = readServiceInfo();
+  if (info) {
+    const deadline = Date.now() + (deps.timeoutMs ?? STOP_TIMEOUT_MS);
+    while (isAlive(info) && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, deps.pollMs ?? POLL_MS));
+    }
+    if (isAlive(info)) kill(info.pid);
+  }
+  await (deps.closeBrowser ?? closeProfileChrome)();
+  return stopped;
 }
 
 export async function serviceStatus(client: Client): Promise<ServiceStatus> {
