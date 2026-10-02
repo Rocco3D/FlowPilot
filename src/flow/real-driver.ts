@@ -20,7 +20,7 @@ import { fillPrompt } from "./prompt.js";
 import { assertFilesExist, attachReferences, planReferences } from "./references.js";
 import { snapshotResults, waitForResults } from "./results.js";
 import { runSelftest } from "./selftest.js";
-import { applySettings } from "./settings-apply.js";
+import { applySettings, ensureClassicComposer } from "./settings-apply.js";
 import { submitGeneration } from "./submit.js";
 
 const MODEL_CACHE_MS = 60 * 60_000;
@@ -70,6 +70,7 @@ export class RealFlowDriver implements FlowDriver {
     const config = loadConfig();
     const page = await this.session.page();
     await this.openProjectFor(page, request.project);
+    await ensureClassicComposer(page);
 
     const { cost, model } = await applySettings(page, request);
     checkSpend(cost, {

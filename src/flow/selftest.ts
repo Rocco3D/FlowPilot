@@ -3,6 +3,7 @@ import type { SelftestReport } from "../core/schemas.js";
 import { createProject, isSignedIn, listProjects, openHome, openProject } from "./navigation.js";
 import { dismissOverlays } from "./overlays.js";
 import { PROJECT_PAGE_SELECTORS, selectors } from "./selectors.js";
+import { ensureClassicComposer } from "./settings-apply.js";
 import { openModelMenu, openSettings, parseCredits, readModelMenu } from "./settings-read.js";
 
 type Check = SelftestReport["checks"][number];
@@ -62,6 +63,11 @@ export async function runSelftest(page: Page): Promise<SelftestReport> {
       throw new Error(`Not found: ${selectors.addIngredientsButton.describe}`);
     }
     return selectors.addIngredientsButton.describe;
+  });
+
+  await check(checks, "agent-mode-off", async () => {
+    await ensureClassicComposer(page);
+    return undefined;
   });
 
   await check(checks, "settings-popover", async () => {

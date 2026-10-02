@@ -108,8 +108,11 @@ export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
     { limit: z.number().int().positive().default(20) },
     async ({ limit }) => (await client.listJobs()).slice(0, limit),
   );
-  tool("cancel_job", "Cancel a queued or running FlowPilot job by id.", idShape, ({ id }) =>
-    client.cancelJob(id),
+  tool(
+    "cancel_job",
+    "Cancel a queued FlowPilot job by id. Running jobs cannot be cancelled.",
+    idShape,
+    ({ id }) => client.cancelJob(id),
   );
   tool(
     "list_models",

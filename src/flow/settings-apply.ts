@@ -31,6 +31,20 @@ export interface WantedSettings {
   durationSec?: number;
 }
 
+/** Flow's "Agent" mode hides the classic settings popover; turn it off if it is on. */
+export async function ensureClassicComposer(page: Page): Promise<void> {
+  const toggle = selectors.agentToggle.locate(page).first();
+  const pressed = () => toggle.getAttribute("aria-pressed", { timeout: 1000 }).catch(() => null);
+  if ((await pressed()) !== "true") return;
+  await clickRobust(toggle);
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    if ((await pressed()) === "false") return;
+    await page.waitForTimeout(200);
+  }
+  throw new FlowPilotError("agent_mode_on", "flow.gen.agentModeOn");
+}
+
 const sameModel = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** Lists the requested settings that the page does not show; empty when all match. */

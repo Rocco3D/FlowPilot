@@ -98,6 +98,15 @@ export const selectors = {
     describe: 'Viewer "Back button"',
     locate: (page) => page.getByRole("button", { name: /back button/i }),
   },
+  agentToggle: {
+    describe: 'Composer button named exactly "Agent" (aria-pressed true when agent mode is on)',
+    locate: (page) =>
+      page.locator("flow-prompt-box").getByRole("button", { name: "Agent", exact: true }),
+  },
+  loadingIndicator: {
+    describe: "Any progressbar (page or card loading)",
+    locate: (page) => page.getByRole("progressbar"),
+  },
   settingsTrigger: {
     describe: 'Settings pill with aria-label "Settings trigger"',
     locate: (page) => page.locator(`button[aria-label="${SETTINGS_TRIGGER_LABEL}"]`),
