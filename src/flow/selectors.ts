@@ -246,20 +246,32 @@ export const resolutionChips = (page: Page) => chip(page, RESOLUTION_CHIP_RE);
 export const durationChips = (page: Page) => chip(page, DURATION_CHIP_RE);
 export const outputChip = (page: Page, n: number) => chip(page, new RegExp(`^x${n}$`));
 
-/** Result tiles of the project grid: video tiles and image tile containers. */
-export const TILE_CONTAINER_CSS = "flow-video-tile, flow-grid-tile-container, flow-tile-container";
 /** Tile menu item "Download" (not the viewer's "Download media"). */
 export const DOWNLOAD_ITEM_RE = /\bdownload\b(?!\s+media)/i;
 
-/** Tile containing the result thumbnail with this src (outermost first in DOM order). */
+const CONTAINER_XPATH =
+  "xpath=ancestor-or-self::*[self::flow-grid-tile-container or self::flow-tile-container][1]";
+/** Video tile with this thumbnail src, else the image tile's container (resolved by src). */
 export const tileBySrc = (page: Page, src: string) =>
-  page.locator(TILE_CONTAINER_CSS).filter({ has: resultImage(page, src) });
+  page
+    .locator("flow-video-tile")
+    .filter({ has: resultImage(page, src) })
+    .or(resultImage(page, src).locator(CONTAINER_XPATH));
 /** Tile at the recorded position among the page's video tiles. */
 export const videoTileAt = (page: Page, index: number) =>
   page.locator("flow-video-tile").nth(index);
-/** The tile's own "More options" button, scoped inside the tile (never the global app menu). */
+/**
+ * The tile's own "More options" button (icon text more_vert), scoped inside the tile's container
+ * and never the global app menu. It is not accessible until hovered, so it is found by icon text.
+ */
 export const tileMoreOptions = (tile: Locator) =>
-  tile.locator('button[aria-label="More options"]').first();
+  tile
+    .locator(CONTAINER_XPATH)
+    .or(tile)
+    .first()
+    .locator("button")
+    .filter({ hasText: /more_vert/ })
+    .first();
 export const tileDownloadItem = (page: Page) =>
   page.locator("[role=menuitem]").filter({ hasText: DOWNLOAD_ITEM_RE });
 

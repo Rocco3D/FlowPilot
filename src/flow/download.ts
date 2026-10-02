@@ -81,7 +81,7 @@ async function saveTier(
   }
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 180000 }),
-    clickRobust(items.nth(choice.index)),
+    items.nth(choice.index).click({ force: true, timeout: 5000 }),
   ]);
   const ext = path.extname(download.suggestedFilename()) || extensionFor(type, undefined);
   await download.saveAs(basePath + ext);
@@ -111,11 +111,13 @@ async function downloadViaTileMenu(
   const tile = await findTile(page, item);
   await tile.scrollIntoViewIfNeeded().catch(() => undefined);
   await tile.hover({ force: true });
-  await clickRobust(tileMoreOptions(tile));
-  const download = tileDownloadItem(page);
-  await download.first().waitFor({ state: "visible", timeout: 5000 });
+  await page.waitForTimeout(1000);
+  await tileMoreOptions(tile).click({ force: true, timeout: 4000 });
+  const download = tileDownloadItem(page).first();
+  await download.waitFor({ state: "visible", timeout: 5000 });
   // The tier submenu opens on hover.
-  await download.first().hover();
+  await download.hover({ force: true });
+  await page.waitForTimeout(800);
   return saveTier(page, tier, basePath, type);
 }
 
