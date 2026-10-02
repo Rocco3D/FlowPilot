@@ -48,6 +48,8 @@ export default {
   "download.viewerNotOpened": "Flow non ha aperto il visualizzatore dei risultati.",
   "download.tierLocked": "Il tier di download richiesto necessita un aggiornamento del piano Flow.",
   "download.fetchFailed": "Non riesco a scaricare un risultato (HTTP {status}).",
+  "download.upscaleUnavailable":
+    "Non sono riuscito a scaricare la qualità richiesta ({quality}). L'originale è ancora in Flow all'indirizzo {url}.",
   "download.noSource": "Non riesco a trovare il file multimediale di un risultato.",
   "driver.notSignedIn":
     "Chrome è collegato ma non ha effettuato l'accesso a Flow. Esegui il comando di accesso.",

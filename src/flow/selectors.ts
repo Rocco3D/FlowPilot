@@ -246,8 +246,42 @@ export const resolutionChips = (page: Page) => chip(page, RESOLUTION_CHIP_RE);
 export const durationChips = (page: Page) => chip(page, DURATION_CHIP_RE);
 export const outputChip = (page: Page, n: number) => chip(page, new RegExp(`^x${n}$`));
 
+/**
+ * Tile menu item "Download" (icon text + label), not "Download media" nor the hidden global
+ * "Download project" item.
+ */
+export const DOWNLOAD_ITEM_RE = /^\s*(download\s*)?download\s*$/i;
+
+const CONTAINER_XPATH =
+  "xpath=ancestor-or-self::*[self::flow-grid-tile-container or self::flow-tile-container][1]";
+/** Video tile with this thumbnail src, else the image tile's container (resolved by src). */
+export const tileBySrc = (page: Page, src: string) =>
+  page
+    .locator("flow-video-tile")
+    .filter({ has: resultImage(page, src) })
+    .or(resultImage(page, src).locator(CONTAINER_XPATH));
+/** Tile at the recorded position among the page's video tiles. */
+export const videoTileAt = (page: Page, index: number) =>
+  page.locator("flow-video-tile").nth(index);
+/**
+ * The tile's own "More options" button (icon text more_vert), scoped inside the tile's container
+ * and never the global app menu. It is not accessible until hovered, so it is found by icon text.
+ */
+export const tileMoreOptions = (tile: Locator) =>
+  // The button lives in the outer grid container, not in the inner flow-tile-container.
+  tile
+    .locator("xpath=ancestor-or-self::flow-grid-tile-container[1]")
+    .or(tile.locator(CONTAINER_XPATH))
+    .first()
+    .locator("button")
+    .filter({ hasText: /more_vert/ })
+    .first();
+// Only visible items: Flow keeps hidden menu instances in the DOM.
+export const tileDownloadItem = (page: Page) =>
+  page.locator("[role=menuitem]:visible").filter({ hasText: DOWNLOAD_ITEM_RE });
+
 export const tierItem = (page: Page, tier: RegExp) =>
-  page.locator("[role=menuitem]").filter({ hasText: tier });
+  page.locator("[role=menuitem]:visible").filter({ hasText: tier });
 export const resultImage = (page: Page, src: string) =>
   page.locator(`img[src=${JSON.stringify(src)}]`);
 

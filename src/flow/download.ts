@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Page } from "playwright-core";
+import type { Locator, Page } from "playwright-core";
 import { FlowPilotError } from "../core/errors.js";
 import type { JobRequest, JobType } from "../core/schemas.js";
 import { clickRobust, dismissOverlays } from "./overlays.js";
@@ -11,7 +11,11 @@ import {
   TIER_RE,
   resultImage,
   selectors,
+  tileBySrc,
+  tileDownloadItem,
+  tileMoreOptions,
   tierItem,
+  videoTileAt,
 } from "./selectors.js";
 
 export interface DownloadedResult {
@@ -23,6 +27,25 @@ export const resultBaseName = (jobId: string, n: number) => `${jobId}-${n}`;
 
 export const tierPattern = (upscale: JobRequest["upscale"]): RegExp =>
   TIER_RE[upscale ?? "original"];
+
+/** Whether the direct fetch (original quality only) may be used when no menu path worked. */
+export function assertFetchAllowed(upscale: JobRequest["upscale"], projectUrl: string): void {
+  if (upscale === undefined) return;
+  throw new FlowPilotError("upscale_unavailable", "flow.download.upscaleUnavailable", {
+    quality: upscale,
+    url: projectUrl,
+  });
+}
+
+export type TierChoice = { kind: "pick"; index: number } | { kind: "locked" } | { kind: "none" };
+
+/** Picks the menu label for the tier; items asking for a plan upgrade are never picked. */
+export function chooseTier(labels: string[], tier: RegExp): TierChoice {
+  const matching = labels.flatMap((label, index) => (tier.test(label) ? [{ label, index }] : []));
+  const open = matching.find((m) => !GATED_TIER_RE.test(m.label));
+  if (open) return { kind: "pick", index: open.index };
+  return matching.length > 0 ? { kind: "locked" } : { kind: "none" };
+}
 
 export function extensionFor(type: JobType, contentType: string | undefined): string {
   if (contentType?.includes("jpeg")) return ".jpg";
@@ -40,7 +63,33 @@ async function openViewer(page: Page, item: ResultItem): Promise<string> {
   return EDIT_PATH_RE.exec(page.url())?.[1] ?? item.id;
 }
 
-async function downloadViaMenu(
+/** Clicks the tier item of the open download menu and saves the file the browser downloads. */
+async function saveTier(
+  page: Page,
+  tier: RegExp,
+  basePath: string,
+  type: JobType,
+): Promise<string> {
+  const items = tierItem(page, tier);
+  await items.first().waitFor({ state: "visible", timeout: 5000 });
+  const choice = chooseTier(await items.allTextContents(), tier);
+  if (choice.kind === "locked") {
+    throw new FlowPilotError("download_tier_locked", "flow.download.tierLocked");
+  }
+  if (choice.kind === "none") {
+    throw new FlowPilotError("download_failed", "flow.download.noSource");
+  }
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 180000 }),
+    items.nth(choice.index).click({ force: true, timeout: 5000 }),
+  ]);
+  const ext = path.extname(download.suggestedFilename()) || extensionFor(type, undefined);
+  await download.saveAs(basePath + ext);
+  return basePath + ext;
+}
+
+/** Viewer path (classic layout): "More options" > "Download media" > tier. */
+async function downloadViaViewerMenu(
   page: Page,
   tier: RegExp,
   basePath: string,
@@ -48,18 +97,28 @@ async function downloadViaMenu(
 ): Promise<string> {
   await clickRobust(selectors.moreOptionsButton.locate(page));
   await clickRobust(selectors.downloadMediaItem.locate(page));
-  const item = tierItem(page, tier).first();
-  await item.waitFor({ state: "visible", timeout: 5000 });
-  if (GATED_TIER_RE.test((await item.textContent()) ?? "")) {
-    throw new FlowPilotError("download_tier_locked", "flow.download.tierLocked");
-  }
-  const [download] = await Promise.all([
-    page.waitForEvent("download", { timeout: 180000 }),
-    clickRobust(item),
-  ]);
-  const ext = path.extname(download.suggestedFilename()) || extensionFor(type, undefined);
-  await download.saveAs(basePath + ext);
-  return basePath + ext;
+  return saveTier(page, tier, basePath, type);
+}
+
+/** Primary path: the result tile's own "More options" > "Download" > tier. */
+async function downloadViaTileMenu(
+  page: Page,
+  item: ResultItem,
+  tier: RegExp,
+  basePath: string,
+  type: JobType,
+): Promise<string> {
+  const tile = await findTile(page, item);
+  await tile.scrollIntoViewIfNeeded().catch(() => undefined);
+  await tile.hover({ force: true });
+  await page.waitForTimeout(1000);
+  await tileMoreOptions(tile).click({ force: true, timeout: 4000 });
+  const download = tileDownloadItem(page).first();
+  await download.waitFor({ state: "visible", timeout: 5000 });
+  // The tier submenu opens on hover.
+  await download.hover({ force: true });
+  await page.waitForTimeout(800);
+  return saveTier(page, tier, basePath, type);
 }
 
 /** Leaves the viewer (back to the project grid) if it is open. */
@@ -73,13 +132,23 @@ async function leaveViewer(page: Page): Promise<void> {
   await dismissOverlays(page);
 }
 
+/** Finds the result tile by thumbnail src; if Flow re-rendered it, by the recorded tile position. */
+async function findTile(page: Page, item: ResultItem): Promise<Locator> {
+  let tile = tileBySrc(page, item.src).first();
+  if ((await tile.count()) === 0) {
+    if (item.tileIndex === undefined) {
+      throw new FlowPilotError("download_no_source", "flow.download.noSource");
+    }
+    tile = videoTileAt(page, item.tileIndex);
+  }
+  return tile;
+}
+
 /** Hovers the result's tile on the grid and returns the src of the video Flow mounts in it. */
 async function videoSrcFromTile(page: Page, item: ResultItem): Promise<string> {
   await leaveViewer(page);
-  const tiles = page.locator("flow-video-tile");
-  // Match by thumbnail src; if Flow re-rendered it, fall back to the tile position at detection.
-  let tile = tiles.filter({ has: page.locator(`img[src=${JSON.stringify(item.src)}]`) }).first();
-  if ((await tile.count()) === 0 && item.tileIndex !== undefined) tile = tiles.nth(item.tileIndex);
+  const tile = await findTile(page, item).catch(() => undefined);
+  if (!tile) return "";
   await tile.scrollIntoViewIfNeeded().catch(() => undefined);
   await tile.hover({ force: true }).catch(() => undefined);
   const deadline = Date.now() + 8000;
@@ -136,25 +205,31 @@ export async function downloadResult(
 ): Promise<DownloadedResult> {
   fs.mkdirSync(options.outDir, { recursive: true });
   const basePath = path.join(options.outDir, resultBaseName(options.jobId, options.n));
+  const projectUrl = page.url();
+  const tier = tierPattern(options.upscale);
   let mediaId = item.id;
-  let opened = true;
   try {
-    mediaId = await openViewer(page, item);
-  } catch (error) {
-    // A video can still be fetched from its grid tile when the viewer cannot be opened.
-    if (options.type !== "video") throw error;
-    opened = false;
-  }
-  try {
-    let file: string;
+    await leaveViewer(page);
+    // 1. Tile menu (new layout).
     try {
-      if (!opened) throw new FlowPilotError("viewer_not_opened", "flow.download.viewerNotOpened");
-      file = await downloadViaMenu(page, tierPattern(options.upscale), basePath, options.type);
+      const file = await downloadViaTileMenu(page, item, tier, basePath, options.type);
+      return { path: file, mediaId };
     } catch (error) {
       if (error instanceof FlowPilotError && error.code === "download_tier_locked") throw error;
       await dismissOverlays(page);
-      file = await downloadViaFetch(page, item, options.type, basePath);
     }
+    // 2. Viewer "Download media" menu (classic layout).
+    try {
+      mediaId = await openViewer(page, item);
+      const file = await downloadViaViewerMenu(page, tier, basePath, options.type);
+      return { path: file, mediaId };
+    } catch (error) {
+      if (error instanceof FlowPilotError && error.code === "download_tier_locked") throw error;
+      await dismissOverlays(page);
+    }
+    // 3. Direct fetch gives the original only: never a silent downgrade.
+    assertFetchAllowed(options.upscale, projectUrl);
+    const file = await downloadViaFetch(page, item, options.type, basePath);
     return { path: file, mediaId };
   } finally {
     await leaveViewer(page);
