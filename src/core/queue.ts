@@ -3,7 +3,8 @@ import { t } from "../i18n/index.js";
 import type { FlowDriver } from "../flow/driver.js";
 import { FlowPilotError } from "./errors.js";
 import type { JobStore } from "./jobs.js";
-import type { Job, JobRequest, JobStatus } from "./schemas.js";
+import type { Logger } from "./logger.js";
+import type { Job, JobError, JobRequest, JobStatus } from "./schemas.js";
 
 export const TERMINAL: JobStatus[] = ["done", "failed", "cancelled", "interrupted"];
 
@@ -14,6 +15,7 @@ export class JobQueue extends EventEmitter {
   constructor(
     private readonly driver: FlowDriver,
     private readonly store: JobStore,
+    private readonly logger?: Logger,
   ) {
     super();
     store.recoverInterrupted();
@@ -104,10 +106,20 @@ export class JobQueue extends EventEmitter {
         finishedAt: new Date().toISOString(),
       });
     } catch (err) {
-      const error =
-        err instanceof FlowPilotError
-          ? { code: err.code, message: err.message }
-          : { code: "internal", message: t("core.error.internal") };
+      let error: JobError;
+      if (err instanceof FlowPilotError) error = { code: err.code, message: err.message };
+      else {
+        const original = err instanceof Error ? err.message : String(err);
+        this.logger?.error("job failed", {
+          id: job.id,
+          error: err instanceof Error ? (err.stack ?? err.message) : original,
+        });
+        error = {
+          code: "internal",
+          message: t("core.error.internal"),
+          detail: (original.split("\n")[0] ?? "").slice(0, 300),
+        };
+      }
       this.change(job.id, { status: "failed", error, finishedAt: new Date().toISOString() });
     }
   }

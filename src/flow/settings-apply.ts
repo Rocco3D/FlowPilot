@@ -70,8 +70,51 @@ const notApplied = (details: string) =>
 
 const exact = (chips: Locator, text: string) => chips.filter({ hasText: new RegExp(`^${text}$`) });
 
-async function click(page: Page, target: Locator): Promise<void> {
-  await clickRobust(target);
+/** Error for a requested option that the current Flow UI does not offer. */
+export function optionNotAvailable(field: string, wanted: string, offered: string[]) {
+  return new FlowPilotError("option_not_available", "flow.gen.optionNotAvailable", {
+    field,
+    wanted,
+    offered: offered.length > 0 ? offered.join(", ") : t("flow.gen.noneOffered"),
+  });
+}
+
+const usable = async (target: Locator): Promise<boolean> =>
+  (await target
+    .first()
+    .isVisible()
+    .catch(() => false)) &&
+  (await target
+    .first()
+    .isEnabled()
+    .catch(() => false));
+
+async function visibleTexts(chips: Locator): Promise<string[]> {
+  const texts = await chips.filter({ visible: true }).allTextContents();
+  return [...new Set(texts.map((s) => s.trim()))];
+}
+
+/** Clicks `target` if it is present and enabled; otherwise throws `option_not_available`. */
+async function pick(
+  page: Page,
+  field: string,
+  wanted: string,
+  target: Locator,
+  offered: Locator | (() => Promise<string[]>),
+): Promise<void> {
+  const fail = async () => {
+    const list = await (typeof offered === "function" ? offered() : visibleTexts(offered)).catch(
+      () => [],
+    );
+    await dismissOverlays(page).catch(() => undefined);
+    return optionNotAvailable(field, wanted, list);
+  };
+  if (!(await usable(target))) throw await fail();
+  try {
+    await clickRobust(target);
+  } catch {
+    throw await fail();
+  }
   await page.waitForTimeout(400);
 }
 
@@ -87,7 +130,11 @@ async function chooseModel(page: Page, wanted: string): Promise<void> {
   const index = items.findIndex((m) => sameModel(m.name, wanted));
   if (index < 0) {
     await dismissOverlays(page);
-    return; // The verification step reports the mismatch.
+    throw optionNotAvailable(
+      "model",
+      wanted,
+      items.map((m) => m.name),
+    );
   }
   await clickRobust(selectors.modelMenuItems.locate(page).nth(index));
   await page.waitForTimeout(500);
@@ -112,12 +159,39 @@ export async function applySettings(
     );
   }
   await openSettings(page);
-  await click(page, modeButton(page, request.type));
+  await pick(
+    page,
+    "mode",
+    request.type,
+    modeButton(page, request.type),
+    selectors.modeButtons.locate(page),
+  );
   if (request.model) await chooseModel(page, request.model);
-  if (request.ratio) await click(page, ratioChip(page, request.ratio));
-  if (request.resolution) await click(page, exact(resolutionChips(page), request.resolution));
-  if (request.duration) await click(page, exact(durationChips(page), `${request.duration}s`));
-  await click(page, outputChip(page, request.outputs));
+  if (request.ratio) {
+    const ratios = Object.keys(RATIO_ICON);
+    const offered = async () => {
+      const found: string[] = [];
+      for (const r of ratios) if (await usable(ratioChip(page, r))) found.push(r);
+      return found;
+    };
+    await pick(page, "ratio", request.ratio, ratioChip(page, request.ratio), offered);
+  }
+  if (request.resolution) {
+    const all = resolutionChips(page);
+    await pick(page, "resolution", request.resolution, exact(all, request.resolution), all);
+  }
+  if (request.duration) {
+    const all = durationChips(page);
+    const wanted = `${request.duration}s`;
+    await pick(page, "duration", wanted, exact(all, wanted), all);
+  }
+  await pick(
+    page,
+    "outputs",
+    `x${request.outputs}`,
+    outputChip(page, request.outputs),
+    selectors.outputChips.locate(page),
+  );
 
   await openSettings(page);
   const trigger = await readSettingsTrigger(page);

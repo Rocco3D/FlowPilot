@@ -11,8 +11,10 @@ export function formatJob(job: Job): string {
     t("cli.job.created", { value: job.createdAt }),
   ];
   if (job.credits !== undefined) lines.push(t("cli.job.credits", { value: job.credits }));
-  if (job.error)
+  if (job.error) {
     lines.push(t("cli.job.error", { code: job.error.code, message: job.error.message }));
+    if (job.error.detail) lines.push(t("cli.job.errorDetail", { value: job.error.detail }));
+  }
   for (const r of job.results) lines.push(t("cli.job.file", { value: r.path }));
   return lines.join("\n");
 }

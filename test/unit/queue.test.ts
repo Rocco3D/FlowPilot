@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FlowPilotError } from "../../src/core/errors.js";
 import { JobStore } from "../../src/core/jobs.js";
 import { JobQueue } from "../../src/core/queue.js";
@@ -87,6 +87,21 @@ describe("JobQueue", () => {
     const queue = new JobQueue(driver, new JobStore(dir));
     const job = await queue.waitFor(queue.enqueue(req).id);
     expect(job.error?.code).toBe("internal");
+  });
+
+  it("logs unknown errors and keeps the first line as detail", async () => {
+    const driver: FlowDriver = Object.create(new FakeDriver()) as FlowDriver;
+    driver.run = () => Promise.reject(new Error(`${"x".repeat(400)}\nsecond line`));
+    const error = vi.fn();
+    const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error };
+    const queue = new JobQueue(driver, new JobStore(dir), logger);
+    const job = await queue.waitFor(queue.enqueue(req).id);
+    expect(job.error).toMatchObject({ code: "internal", message: "Internal error" });
+    expect(job.error?.detail).toBe("x".repeat(300));
+    expect(error).toHaveBeenCalledWith(
+      "job failed",
+      expect.objectContaining({ id: job.id, error: expect.stringContaining("second line") }),
+    );
   });
 
   it("cancels a queued job but not a running one", async () => {

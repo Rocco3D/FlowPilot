@@ -66,6 +66,7 @@ export default {
   "job.created": "Created: {value}",
   "job.credits": "Credits: {value}",
   "job.error": "Error: {code}: {message}",
+  "job.errorDetail": "Detail: {value}",
   "job.file": "File: {value}",
   "cancel.description": "Cancel a job",
   "cancel.done": "Job {id} is now {status}",

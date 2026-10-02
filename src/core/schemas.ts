@@ -45,6 +45,8 @@ export type JobResult = z.infer<typeof JobResult>;
 export const JobError = z.object({
   code: z.string(),
   message: z.string(),
+  /** First line of the original error when the failure was unexpected. */
+  detail: z.string().optional(),
 });
 export type JobError = z.infer<typeof JobError>;
 

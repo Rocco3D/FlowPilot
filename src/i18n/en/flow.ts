@@ -15,6 +15,9 @@ export default {
   "models.menuNotOpen": "The Flow model menu did not open.",
   "gen.settingsNotApplied": "Flow did not apply the requested settings: {details}.",
   "gen.settingsMismatch": "{field} should be {wanted} but is {actual}",
+  "gen.optionNotAvailable":
+    "Flow does not offer {field} {wanted} with the current settings. Available: {offered}.",
+  "gen.noneOffered": "none",
   "gen.agentModeOn": "Flow's Agent mode is on and could not be turned off.",
   "gen.creditsUnreadable": "Could not read the credit cost from Flow.",
   "gen.promptNotSet": "The prompt box is empty after typing the prompt.",

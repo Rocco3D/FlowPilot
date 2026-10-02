@@ -49,8 +49,8 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
   const config = loadConfig(configDir);
   const token = ensureToken(configDir);
   const store = new JobStore(path.join(dataDir, "jobs"));
-  const queue = new JobQueue(driver, store);
   const logger = createLogger({ dir: path.join(dataDir, "logs"), level: config.logLevel });
+  const queue = new JobQueue(driver, store, logger);
 
   let stopping: Promise<void> | undefined;
   let idleTimer: NodeJS.Timeout | undefined;
