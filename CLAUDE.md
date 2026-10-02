@@ -1,19 +1,21 @@
-# Rules for AI agents
+# FlowPilot
 
-- English only: code, comments, docs, commits.
-- Every user-facing string goes through `t(key, params)` (`src/i18n`). Never hard-code it.
-- `temp/` (scratch files) and `internal/` are git-ignored. Never reference them from tracked files.
-- Never name or link third-party reference implementations in tracked files.
-- Simplicity first: the least code that solves the task, nothing speculative.
-- Never trigger a Google Flow generation that spends credits without explicit user approval. Image generations with Nano Banana models cost 0 credits on the owner's plan; video generations cost credits.
-- Flow DOM selectors live only in `src/flow/selectors.ts`.
-- Commits follow Conventional Commits.
+FlowPilot is a local service that drives Google Flow (AI image and video generation) through the user's own signed-in Chrome, using their own Flow subscription credits. It exposes a CLI (`flowpilot`), a local HTTP API (127.0.0.1 only, bearer token) and an MCP server for AI assistants. Jobs run one at a time on a single Flow session. TypeScript, Node.js 22.12+, Playwright over the Chrome DevTools Protocol.
 
-## Folder ownership by work track
+## Source paths
 
-- A: `src/browser`, `src/flow`
-- B: `src/core`, `src/server/http.ts`, `src/server/auth.ts`
-- C: `src/cli`, `src/server/mcp.ts`
-- D: `README*`, `docs/`, `examples/`, `CHANGELOG.md`, `src/i18n/it/`
+- `src/cli/` - the `flowpilot` command (`program.ts`, `commands/`), HTTP client of the service (`client.ts`), service start/stop (`service-control.ts`).
+- `src/server/` - service entrypoint (`main.ts`), local HTTP API (`http.ts`), token auth (`auth.ts`), MCP server (`mcp.ts`).
+- `src/core/` - service lifecycle (`service.ts`), job store and serial queue (`jobs.ts`, `queue.ts`), credit ledger and limits (`credits.ts`), config (`config.ts`), platform paths (`paths.ts`), logger, errors, shared Zod schemas (`schemas.ts`).
+- `src/browser/` - Chrome session (`session.ts`) and Chrome process handling (`processes.ts`).
+- `src/flow/` - everything that knows the Flow page: all DOM selectors (`selectors.ts`), navigation, settings, prompt, submit, results, download, reference uploads, model discovery, self-test, and the driver used by the service (`real-driver.ts`, interface in `driver.ts`).
+- `src/i18n/` - user-facing strings, English (`en/`) and Italian (`it/`).
+- `test/unit/` - unit tests (Vitest); `test/fakes/` - fake Flow driver.
+- `docs/` - architecture, local HTTP API, MCP server.
+- `assets/brand/` - logos and banner (not covered by the MIT License, see `assets/brand/NOTICE.md`).
 
-Shared contract files (`src/core/schemas.ts`, `src/flow/driver.ts`, `package.json`) change only when the task says so.
+## Runtime paths
+
+- Config and API token: `%APPDATA%\FlowPilot\` (macOS `~/Library/Application Support/FlowPilot`, Linux `~/.config/flowpilot`).
+- Chrome profile, jobs, logs, credit ledger, `service.json`: `%LOCALAPPDATA%\FlowPilot\` (macOS `~/Library/Application Support/FlowPilot`, Linux `~/.local/share/flowpilot`).
+- Results: `Documents\FlowPilot` by default (`outputDir` in the config).
