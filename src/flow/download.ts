@@ -76,10 +76,10 @@ async function leaveViewer(page: Page): Promise<void> {
 /** Hovers the result's tile on the grid and returns the src of the video Flow mounts in it. */
 async function videoSrcFromTile(page: Page, item: ResultItem): Promise<string> {
   await leaveViewer(page);
-  const tile = page
-    .locator("flow-video-tile")
-    .filter({ has: page.locator(`img[src*=${JSON.stringify(item.id)}]`) })
-    .first();
+  const tiles = page.locator("flow-video-tile");
+  // Match by thumbnail src; if Flow re-rendered it, fall back to the tile position at detection.
+  let tile = tiles.filter({ has: page.locator(`img[src=${JSON.stringify(item.src)}]`) }).first();
+  if ((await tile.count()) === 0 && item.tileIndex !== undefined) tile = tiles.nth(item.tileIndex);
   await tile.scrollIntoViewIfNeeded().catch(() => undefined);
   await tile.hover({ force: true }).catch(() => undefined);
   const deadline = Date.now() + 8000;
@@ -136,10 +136,19 @@ export async function downloadResult(
 ): Promise<DownloadedResult> {
   fs.mkdirSync(options.outDir, { recursive: true });
   const basePath = path.join(options.outDir, resultBaseName(options.jobId, options.n));
-  const mediaId = await openViewer(page, item);
+  let mediaId = item.id;
+  let opened = true;
+  try {
+    mediaId = await openViewer(page, item);
+  } catch (error) {
+    // A video can still be fetched from its grid tile when the viewer cannot be opened.
+    if (options.type !== "video") throw error;
+    opened = false;
+  }
   try {
     let file: string;
     try {
+      if (!opened) throw new FlowPilotError("viewer_not_opened", "flow.download.viewerNotOpened");
       file = await downloadViaMenu(page, tierPattern(options.upscale), basePath, options.type);
     } catch (error) {
       if (error instanceof FlowPilotError && error.code === "download_tier_locked") throw error;

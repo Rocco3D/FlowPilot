@@ -8,30 +8,64 @@ import {
   writeSummary,
 } from "../../src/flow/download.js";
 import { splitPrompt } from "../../src/flow/prompt.js";
-import { classifyChunks, classifyFailure, classifyResultSrc } from "../../src/flow/results.js";
+import {
+  classifyChunks,
+  classifyFailure,
+  classifyResultImg,
+  idFromSrc,
+} from "../../src/flow/results.js";
 import { diffSettings, optionNotAvailable } from "../../src/flow/settings-apply.js";
 import { setLocale } from "../../src/i18n/index.js";
 
-describe("classifyResultSrc", () => {
+describe("classifyResultImg", () => {
   const thumb = "https://flow-content.google/image/0a1b2c3d-1111-2222-3333-444455556666?x=1";
-
-  it("treats a thumbnail in a video tile as a video", () => {
-    expect(classifyResultSrc(thumb, true)).toBe("video");
+  const asb = "https://flow.google.com/asb/ANqvAbC123";
+  const img = (src: string, over: Partial<Parameters<typeof classifyResultImg>[0]> = {}) => ({
+    src,
+    inVideoTile: false,
+    inPromptBox: false,
+    thumbnail: false,
+    width: 300,
+    tileIndex: -1,
+    ...over,
   });
 
-  it("treats a Flow image outside a tile as an image", () => {
-    expect(classifyResultSrc(thumb, false)).toBe("image");
+  it("treats a thumbnail in a video tile as a video, whatever its host", () => {
+    expect(classifyResultImg(img(thumb, { inVideoTile: true }))).toBe("video");
+    expect(classifyResultImg(img(asb, { inVideoTile: true, thumbnail: true }))).toBe("video");
+    expect(classifyResultImg(img(asb, { inVideoTile: true }))).toBeUndefined();
+  });
+
+  it("treats a large Flow image outside a tile as an image (both URL styles)", () => {
+    expect(classifyResultImg(img(thumb))).toBe("image");
+    expect(classifyResultImg(img(asb))).toBe("image");
+  });
+
+  it("ignores small images and images in the prompt box", () => {
+    expect(classifyResultImg(img(asb, { width: 40 }))).toBeUndefined();
+    expect(classifyResultImg(img(thumb, { inPromptBox: true }))).toBeUndefined();
   });
 
   it("accepts legacy redirect images but not their thumbnails", () => {
     const legacy = "https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=abc-123";
-    expect(classifyResultSrc(legacy, false)).toBe("image");
-    expect(classifyResultSrc(`${legacy}&mediaUrlType=THUMBNAIL`, false)).toBeUndefined();
+    expect(classifyResultImg(img(legacy))).toBe("image");
+    expect(classifyResultImg(img(`${legacy}&mediaUrlType=THUMBNAIL`))).toBeUndefined();
   });
 
-  it("ignores unrelated images", () => {
-    expect(classifyResultSrc("https://example.com/a.png", false)).toBeUndefined();
-    expect(classifyResultSrc("https://example.com/a.png", true)).toBeUndefined();
+  it("ignores unrelated hosts", () => {
+    expect(classifyResultImg(img("https://example.com/a.png"))).toBeUndefined();
+  });
+});
+
+describe("idFromSrc", () => {
+  it("uses the media id when the URL has one", () => {
+    expect(idFromSrc("https://flow-content.google/image/0a1b-22?x=1")).toBe("0a1b-22");
+  });
+
+  it("falls back to a stable hash", () => {
+    const src = "https://flow.google.com/asb/ANqvAbC123";
+    expect(idFromSrc(src)).toBe(idFromSrc(src));
+    expect(idFromSrc(src)).not.toBe(idFromSrc(`${src}4`));
   });
 });
 

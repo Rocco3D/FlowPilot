@@ -25,6 +25,10 @@ export const OUTPUT_CHIP_RE = /^x[1-4]$/;
 export const RESOLUTION_CHIP_RE = /^\d{3,4}p$/;
 export const DURATION_CHIP_RE = /^\d+s$/;
 export const FLOW_IMAGE_RE = /flow-content\.google\/image\/([0-9a-f-]+)/i;
+/** Media hosts of result images; video thumbnails are recognised by structure, not by host. */
+export const RESULT_IMAGE_HOST_RE = /^https?:\/\/(flow-content\.google|flow\.google\.com)\//i;
+/** Result images are large; avatars and icons are smaller than this (rendered width, px). */
+export const MIN_RESULT_IMAGE_WIDTH = 120;
 export const LEGACY_MEDIA_RE = /media\.getMediaUrlRedirect/;
 export const LEGACY_NAME_RE = /[?&]name=([0-9a-f-]+)/i;
 export const EDIT_PATH_RE = /\/edit\/([0-9a-f-]+)/i;
