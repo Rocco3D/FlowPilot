@@ -20,6 +20,6 @@ export interface FlowDriver {
     job: Job,
     onProgress?: (status: JobStatus) => void,
   ): Promise<{ results: JobResult[]; credits: number }>;
-  /** Releases the browser connection. */
-  close(): Promise<void>;
+  /** Releases the browser connection; with `closeBrowser` also quits the automation Chrome. */
+  close(options?: { closeBrowser?: boolean }): Promise<void>;
 }

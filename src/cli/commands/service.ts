@@ -1,9 +1,9 @@
 import type { Command } from "commander";
 import { t } from "../../i18n/index.js";
-import { connect, newClient, show, type JsonOpt } from "../context.js";
-import { serviceStatus, stopService } from "../service-control.js";
+import { connect, newClient, show, type Ctx, type JsonOpt } from "../context.js";
+import { serviceStatus, stopEverything } from "../service-control.js";
 
-export function registerService(program: Command): void {
+export function registerService(program: Command, ctx: Ctx): void {
   const service = program.command("service").description(t("cli.service.description"));
 
   service
@@ -21,7 +21,7 @@ export function registerService(program: Command): void {
     .description(t("cli.service.stopDescription"))
     .option("--json", t("cli.jsonOption"))
     .action(async (opts: JsonOpt, cmd: Command) => {
-      const stopped = await stopService(newClient(cmd));
+      const stopped = await stopEverything(newClient(cmd), ctx.stopDeps);
       show(opts, { stopped }, () => t(stopped ? "cli.service.stopped" : "cli.service.notRunning"));
     });
 

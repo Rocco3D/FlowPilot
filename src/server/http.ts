@@ -24,6 +24,8 @@ export interface HttpDeps {
   logger: Logger;
   /** Called after `POST /shutdown` has been answered. */
   onShutdown: () => void;
+  /** Called for every request except `GET /health`. */
+  onActivity: () => void;
 }
 
 const MAX_BODY = 1024 * 1024;
@@ -129,6 +131,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       method === m && parts.length === n && a === head;
 
     if (is("GET", 1, "health")) return send(res, 200, { ok: true, version: deps.version });
+    deps.onActivity();
     if (!isAuthorized(req.headers.authorization, deps.token)) {
       throw new HttpError(401, "unauthorized", t("http.unauthorized"));
     }

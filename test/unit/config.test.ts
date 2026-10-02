@@ -73,6 +73,15 @@ describe("config", () => {
     expect(codeOf(() => setConfigValue("acceptUploadRights", "maybe", dir))).toBe("config_invalid");
   });
 
+  it("defaults and coerces idleMinutes and showBrowser", () => {
+    expect(loadConfig(dir)).toMatchObject({ idleMinutes: 30, showBrowser: false });
+    expect(setConfigValue("idleMinutes", "0", dir).idleMinutes).toBe(0);
+    expect(setConfigValue("showBrowser", "true", dir).showBrowser).toBe(true);
+    expect(codeOf(() => setConfigValue("idleMinutes", "-1", dir))).toBe("config_invalid");
+    expect(codeOf(() => setConfigValue("idleMinutes", "1.5", dir))).toBe("config_invalid");
+    expect(codeOf(() => setConfigValue("showBrowser", "yes", dir))).toBe("config_invalid");
+  });
+
   it("keeps numeric-looking values as strings for string fields", () => {
     expect(setConfigValue("locale", "123", dir).locale).toBe("123");
     expect(setConfigValue("defaultVideoModel", "123", dir).defaultVideoModel).toBe("123");

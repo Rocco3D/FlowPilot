@@ -15,6 +15,10 @@ export default {
   "models.menuNotOpen": "Il menu del modello di Flow non si è aperto.",
   "gen.settingsNotApplied": "Flow non ha applicato le impostazioni richieste: {details}.",
   "gen.settingsMismatch": "{field} dovrebbe essere {wanted} ma è {actual}",
+  "gen.optionNotAvailable":
+    "Flow non offre {field} {wanted} con le impostazioni attuali. Disponibili: {offered}.",
+  "gen.noneOffered": "nessuno",
+  "gen.agentModeOn": "La modalità Agent di Flow è attiva e non è stato possibile disattivarla.",
   "gen.creditsUnreadable": "Non riesco a leggere il costo dei crediti da Flow.",
   "gen.promptNotSet": "La casella del prompt è vuota dopo aver digitato il prompt.",
   "gen.submitNotReady": "Il pulsante Avvia generazione non è diventato abilitato.",

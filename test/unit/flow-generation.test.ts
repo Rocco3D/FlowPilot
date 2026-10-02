@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   extensionFor,
   resultBaseName,
@@ -9,7 +9,8 @@ import {
 } from "../../src/flow/download.js";
 import { splitPrompt } from "../../src/flow/prompt.js";
 import { classifyChunks, classifyFailure, classifyResultSrc } from "../../src/flow/results.js";
-import { diffSettings } from "../../src/flow/settings-apply.js";
+import { diffSettings, optionNotAvailable } from "../../src/flow/settings-apply.js";
+import { setLocale } from "../../src/i18n/index.js";
 
 describe("classifyResultSrc", () => {
   const thumb = "https://flow-content.google/image/0a1b2c3d-1111-2222-3333-444455556666?x=1";
@@ -133,5 +134,20 @@ describe("classifyChunks", () => {
   it("prefers alert containers over other text", () => {
     const found = classifyChunks([chunk("Generation failed"), chunk("Rate limit", false, true)]);
     expect(found?.code).toBe("rate_limited");
+  });
+});
+
+describe("optionNotAvailable", () => {
+  beforeEach(() => setLocale("en"));
+
+  it("lists the requested and the offered values", () => {
+    const err = optionNotAvailable("resolution", "360p", ["720p", "1080p"]);
+    expect(err.code).toBe("option_not_available");
+    expect(err.message).toContain("resolution 360p");
+    expect(err.message).toContain("720p, 1080p");
+  });
+
+  it("says so when nothing is offered", () => {
+    expect(optionNotAvailable("resolution", "360p", []).message).toContain("Available: none");
   });
 });

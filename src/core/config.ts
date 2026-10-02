@@ -16,14 +16,24 @@ export const Config = z.object({
   logLevel: z.enum(["debug", "info", "warn", "error"]).default("info"),
   /** Click "I agree" on the rights dialog Flow shows after each upload. */
   acceptUploadRights: z.boolean().default(true),
+  /** Minutes without jobs or requests before the service shuts itself down; 0 = never. */
+  idleMinutes: z.number().int().min(0).default(30),
+  /** Show the automation Chrome window while working. */
+  showBrowser: z.boolean().default(false),
 });
 export type Config = z.infer<typeof Config>;
 
 // Fields whose raw string is parsed as a number; all others stay strings.
-const numericKeys = new Set<string>(["outputs", "maxCreditsPerJob", "monthlyCreditLimit", "port"]);
+const numericKeys = new Set<string>([
+  "outputs",
+  "maxCreditsPerJob",
+  "monthlyCreditLimit",
+  "port",
+  "idleMinutes",
+]);
 
 // Fields whose "true"/"false" string becomes a boolean.
-const booleanKeys = new Set<string>(["acceptUploadRights"]);
+const booleanKeys = new Set<string>(["acceptUploadRights", "showBrowser"]);
 
 function configFile(dir: string): string {
   return path.join(dir, "config.json");

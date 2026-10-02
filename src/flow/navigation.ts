@@ -53,7 +53,12 @@ async function readCards(page: Page): Promise<ProjectCard[]> {
   const links = selectors.projectLinks.locate(page);
   await links
     .first()
-    .waitFor({ state: "visible", timeout: 10000 })
+    .waitFor({ state: "visible", timeout: 15000 })
+    .catch(() => undefined);
+  await selectors.loadingIndicator
+    .locate(page)
+    .first()
+    .waitFor({ state: "hidden", timeout: 5000 })
     .catch(() => undefined);
   const raw = await links.evaluateAll(
     (anchors, linkCss) =>

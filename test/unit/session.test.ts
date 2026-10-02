@@ -36,7 +36,8 @@ describe("automationArgs", () => {
     const args = automationArgs("/p", false, "https://x/");
     expect(args).toContain("--user-data-dir=/p");
     expect(args).toContain("--remote-debugging-port=0");
-    expect(args).toContain("--start-minimized");
+    expect(args).toContain("--window-position=-32000,-32000");
+    expect(args).not.toContain("--start-minimized");
     expect(args.at(-1)).toBe("https://x/");
   });
   it("does not hide the window when headed", () => {

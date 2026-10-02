@@ -10,6 +10,7 @@ import {
   resolutionChips,
   selectors,
 } from "./selectors.js";
+import { ensureClassicComposer } from "./settings-apply.js";
 import {
   openModelMenu,
   openSettings,
@@ -141,6 +142,7 @@ async function restore(page: Page, original: TriggerSettings, modelName: string)
 
 /** Reads every model of Video and Image mode in the open project. Never submits. */
 export async function discoverModels(page: Page): Promise<ModelInfo[]> {
+  await ensureClassicComposer(page);
   await openSettings(page);
   const original = await readSettingsTrigger(page);
   const dropdown = await selectors.modelDropdown.locate(page).first().textContent();

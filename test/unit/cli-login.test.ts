@@ -7,6 +7,12 @@ let server: http.Server;
 let port: number;
 let seen: string[];
 let out: string[];
+// Never touch the real service or Chrome from tests.
+const stopDeps = {
+  isAlive: () => false,
+  kill: () => undefined,
+  closeBrowser: async () => undefined,
+};
 
 beforeEach(async () => {
   seen = [];
@@ -34,6 +40,7 @@ describe("cli login", () => {
     const code = await run(["--port", String(port), "login", "--profile", "work"], {
       pollMs: 5,
       openLogin,
+      stopDeps,
     });
     expect(code).toBe(0);
     expect(openLogin).toHaveBeenCalledWith("work");
@@ -46,6 +53,7 @@ describe("cli login", () => {
     const code = await run(["--port", String(port), "login", "--json"], {
       pollMs: 5,
       openLogin: async () => "/profiles/default",
+      stopDeps,
     });
     expect(code).toBe(0);
     expect(JSON.parse(out.join("\n"))).toEqual({ profileDir: "/profiles/default" });

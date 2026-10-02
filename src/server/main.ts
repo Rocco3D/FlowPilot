@@ -3,9 +3,12 @@ import { RealFlowDriver } from "../flow/real-driver.js";
 import { t } from "../i18n/index.js";
 
 try {
-  const service = await startService({ driver: new RealFlowDriver() });
+  const service = await startService({
+    driver: new RealFlowDriver(),
+    onExit: () => process.exit(0),
+  });
   for (const signal of ["SIGINT", "SIGTERM"] as const) {
-    process.once(signal, () => void service.stop().then(() => process.exit(0)));
+    process.once(signal, () => service.shutdown());
   }
 } catch (error) {
   const reason = error instanceof Error ? error.message : String(error);

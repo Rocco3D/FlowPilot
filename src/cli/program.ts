@@ -9,7 +9,8 @@ import { registerJobs } from "./commands/jobs.js";
 import { registerLogin } from "./commands/login.js";
 import { registerService } from "./commands/service.js";
 import { startMcpServer } from "../server/mcp.js";
-import type { Ctx } from "./context.js";
+import { newClient, show, type Ctx, type JsonOpt } from "./context.js";
+import { stopEverything } from "./service-control.js";
 
 const { version } = createRequire(import.meta.url)("../../package.json") as { version: string };
 
@@ -25,8 +26,16 @@ export function buildProgram(ctx: Ctx = { pollMs: 2000 }): Command {
   registerGenerate(program, ctx);
   registerJobs(program);
   registerConfig(program);
-  registerService(program);
+  registerService(program, ctx);
   registerLogin(program, ctx);
+  program
+    .command("stop")
+    .description(t("cli.stop.description"))
+    .option("--json", t("cli.jsonOption"))
+    .action(async (opts: JsonOpt, cmd: Command) => {
+      await stopEverything(newClient(cmd), ctx.stopDeps);
+      show(opts, { stopped: true }, () => t("cli.stop.done"));
+    });
   program
     .command("mcp")
     .description(t("cli.mcp.description"))

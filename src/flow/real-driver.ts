@@ -20,7 +20,7 @@ import { fillPrompt } from "./prompt.js";
 import { assertFilesExist, attachReferences, planReferences } from "./references.js";
 import { snapshotResults, waitForResults } from "./results.js";
 import { runSelftest } from "./selftest.js";
-import { applySettings } from "./settings-apply.js";
+import { applySettings, ensureClassicComposer } from "./settings-apply.js";
 import { submitGeneration } from "./submit.js";
 
 const MODEL_CACHE_MS = 60 * 60_000;
@@ -28,7 +28,11 @@ const MODEL_CACHE_MS = 60 * 60_000;
 export class RealFlowDriver implements FlowDriver {
   private models: { at: number; list: ModelInfo[] } | undefined;
 
-  constructor(private readonly session: BrowserSession = new BrowserSession()) {}
+  constructor(
+    private readonly session: BrowserSession = new BrowserSession({
+      headed: loadConfig().showBrowser,
+    }),
+  ) {}
 
   async doctor(): Promise<SessionStatus> {
     const status = await this.session.status();
@@ -66,6 +70,7 @@ export class RealFlowDriver implements FlowDriver {
     const config = loadConfig();
     const page = await this.session.page();
     await this.openProjectFor(page, request.project);
+    await ensureClassicComposer(page);
 
     const { cost, model } = await applySettings(page, request);
     checkSpend(cost, {
@@ -105,8 +110,9 @@ export class RealFlowDriver implements FlowDriver {
     return { results, credits: cost };
   }
 
-  async close(): Promise<void> {
-    await this.session.close();
+  async close(options: { closeBrowser?: boolean } = {}): Promise<void> {
+    if (options.closeBrowser) await this.session.closeBrowser();
+    else await this.session.close();
   }
 
   /** Opens the named project, else the most recent one, else a new one. */
