@@ -113,8 +113,10 @@ export class JobQueue extends EventEmitter {
       });
     } catch (err) {
       let error: JobError;
-      if (err instanceof FlowPilotError) error = { code: err.code, message: err.message };
-      else {
+      if (err instanceof FlowPilotError) {
+        error = { code: err.code, message: err.message };
+        this.logger?.error("job failed", { id: job.id, code: err.code, message: err.message });
+      } else {
         const original = err instanceof Error ? err.message : String(err);
         this.logger?.error("job failed", {
           id: job.id,
