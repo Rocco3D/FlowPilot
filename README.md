@@ -1,8 +1,8 @@
 <p align="center"><img src="assets/brand/banner.png" alt="FlowPilot" width="100%"></p>
 
-# FlowPilot
+<p align="center"><b>English</b> &nbsp;|&nbsp; <a href="README.it.md">Italiano</a></p>
 
-[Leggi in italiano](README.it.md)
+# FlowPilot
 
 FlowPilot is a local service that drives Google Flow (AI image and video generation) through your own logged-in Chrome, using your own Flow subscription credits. It is usable from a CLI (`flowpilot`), a local HTTP API (127.0.0.1 only, protected by a token) and an MCP server for AI assistants (Claude Code, Codex, Cursor and others).
 
