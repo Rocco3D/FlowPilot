@@ -62,6 +62,8 @@ export const TIER_RE = { original: /original/i, "1080p": /2K|1080p/i, "4k": /4K/
 
 export const SETTINGS_TRIGGER_LABEL = "Settings trigger";
 
+const dialogOf = (page: Page) => page.getByRole("dialog", { name: /add assets/i });
+
 const chip = (page: Page, text: RegExp) =>
   page.locator("button, [role=radio]").filter({ hasText: text });
 
@@ -138,6 +140,73 @@ export const selectors = {
     describe: 'Menu item "Download media"',
     locate: (page) => page.locator("[role=menuitem]").filter({ hasText: /download media/i }),
   },
+  addIngredientsButton: {
+    describe: 'Prompt area button with aria-label "Add ingredients to the prompt box"',
+    locate: (page) => page.locator('button[aria-label="Add ingredients to the prompt box"]'),
+  },
+  mediaDialog: {
+    describe: 'Dialog "Add assets to the project" (accessible name matches /add assets/i)',
+    locate: (page) => dialogOf(page),
+  },
+  mediaDialogLoading: {
+    describe: 'Progressbar "Loading�" inside the add assets dialog',
+    locate: (page) => dialogOf(page).getByRole("progressbar"),
+  },
+  mediaDialogClose: {
+    describe: 'Add assets dialog button "Close"',
+    locate: (page) => dialogOf(page).getByRole("button", { name: "Close", exact: true }),
+  },
+  mediaDialogUpload: {
+    describe: 'Add assets dialog button "Upload media"',
+    locate: (page) => dialogOf(page).getByRole("button", { name: /upload media/i }),
+  },
+  mediaDialogSelected: {
+    describe: "Selected tile in the add assets dialog (role option, aria-selected true)",
+    locate: (page) => dialogOf(page).locator('[role=option][aria-selected="true"]'),
+  },
+  mediaDialogTiles: {
+    describe: 'Assets of the dialog listbox "Asset list" (role option, name "<title> Image")',
+    locate: (page) => dialogOf(page).getByRole("option"),
+  },
+  mediaDialogConfirm: {
+    describe: 'Optional confirm button "Add to Prompt" (absent in the live UI)',
+    locate: (page) =>
+      dialogOf(page)
+        .locator("button")
+        .filter({ hasText: /add to (prompt|scene|project)/i }),
+  },
+  mediaDialogCategory: {
+    describe: 'Dialog dropdown button "Filter by category" (text "All")',
+    locate: (page) => dialogOf(page).getByRole("button", { name: /filter by category/i }),
+  },
+  mediaDialogCategoryOptions: {
+    describe: "Options of the open category dropdown (menu items or options)",
+    locate: (page) => page.locator("[role=menuitem], [role=menuitemradio], [role=option]"),
+  },
+  mediaDialogSearch: {
+    describe: 'Add assets dialog textbox "Search assets"',
+    locate: (page) => dialogOf(page).getByRole("textbox", { name: /search assets/i }),
+  },
+  rightsDialog: {
+    describe: 'Dialog "Rights to use this image" shown after an upload',
+    locate: (page) => page.getByRole("dialog", { name: /rights to use/i }),
+  },
+  rightsAgree: {
+    describe: 'Rights dialog button "I agree"',
+    locate: (page) =>
+      page
+        .getByRole("dialog", { name: /rights to use/i })
+        .getByRole("button", { name: /i agree/i }),
+  },
+  rightsCancel: {
+    describe: 'Rights dialog button "Cancel"',
+    locate: (page) =>
+      page.getByRole("dialog", { name: /rights to use/i }).getByRole("button", { name: /cancel/i }),
+  },
+  attachedReferences: {
+    describe: "Flow images attached as references in the custom element flow-prompt-box",
+    locate: (page) => page.locator('flow-prompt-box img[src*="flow-content.google/image/"]'),
+  },
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
     locate: (page) => page.locator(".cdk-overlay-backdrop-showing"),
@@ -159,3 +228,18 @@ export const tierItem = (page: Page, tier: RegExp) =>
   page.locator("[role=menuitem]").filter({ hasText: tier });
 export const resultImage = (page: Page, src: string) =>
   page.locator(`img[src=${JSON.stringify(src)}]`);
+
+/** Video sub-mode chips in the settings popover. */
+export const subModeChip = (page: Page, mode: "frames" | "ingredients") =>
+  chip(page, mode === "frames" ? /Frames$/ : /Ingredients$/);
+/** Empty frame slot of the prompt area; a filled slot no longer shows its label. */
+export const frameSlot = (page: Page, slot: "Start" | "End") =>
+  page.getByText(slot, { exact: true });
+/** Asset option in the add assets dialog whose name starts with the exact title. */
+export const assetOption = (page: Page, name: string) =>
+  dialogOf(page).getByRole("option").filter({ hasText: name });
+/** Asset option of the add assets dialog whose name starts with an uploaded file's base name. */
+export const assetForFile = (page: Page, basename: string) =>
+  dialogOf(page).getByRole("option", {
+    name: new RegExp(`^${basename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+  });

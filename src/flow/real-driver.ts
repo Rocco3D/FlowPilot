@@ -2,7 +2,7 @@ import type { Page } from "playwright-core";
 import { BrowserSession } from "../browser/session.js";
 import { loadConfig } from "../core/config.js";
 import { checkSpend, recordSpend } from "../core/credits.js";
-import { FlowPilotError } from "../core/errors.js";
+import { createLogger } from "../core/logger.js";
 import type {
   Job,
   JobResult,
@@ -17,6 +17,7 @@ import type { FlowDriver } from "./driver.js";
 import { discoverModels } from "./models.js";
 import { createProject, isSignedIn, listProjects, openHome, openProject } from "./navigation.js";
 import { fillPrompt } from "./prompt.js";
+import { assertFilesExist, attachReferences, planReferences } from "./references.js";
 import { snapshotResults, waitForResults } from "./results.js";
 import { runSelftest } from "./selftest.js";
 import { applySettings } from "./settings-apply.js";
@@ -60,9 +61,8 @@ export class RealFlowDriver implements FlowDriver {
     onProgress?: (status: JobStatus) => void,
   ): Promise<{ results: JobResult[]; credits: number }> {
     const request = job.request;
-    if (request.startFrame || request.endFrame || request.ingredients || request.characters) {
-      throw new FlowPilotError("unsupported_input", "flow.gen.unsupportedInput");
-    }
+    const references = planReferences(request);
+    assertFilesExist(references);
     const config = loadConfig();
     const page = await this.session.page();
     await this.openProjectFor(page, request.project);
@@ -74,6 +74,10 @@ export class RealFlowDriver implements FlowDriver {
       ...(request.confirm ? { confirm: true } : {}),
     });
 
+    await attachReferences(page, references, {
+      acceptUploadRights: config.acceptUploadRights,
+      log: createLogger({ level: config.logLevel }),
+    });
     await fillPrompt(page, request.prompt);
     const before = await snapshotResults(page, request.type);
     await submitGeneration(page);
