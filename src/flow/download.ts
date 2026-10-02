@@ -62,19 +62,54 @@ async function downloadViaMenu(
   return basePath + ext;
 }
 
+/** Leaves the viewer (back to the project grid) if it is open. */
+async function leaveViewer(page: Page): Promise<void> {
+  await dismissOverlays(page);
+  if (!EDIT_PATH_RE.test(page.url())) return;
+  await clickRobust(selectors.backButton.locate(page)).catch(() => undefined);
+  await page
+    .waitForURL((url) => !EDIT_PATH_RE.test(url.pathname), { timeout: 10000 })
+    .catch(() => undefined);
+  await dismissOverlays(page);
+}
+
+/** Hovers the result's tile on the grid and returns the src of the video Flow mounts in it. */
+async function videoSrcFromTile(page: Page, item: ResultItem): Promise<string> {
+  await leaveViewer(page);
+  const tile = page
+    .locator("flow-video-tile")
+    .filter({ has: page.locator(`img[src*=${JSON.stringify(item.id)}]`) })
+    .first();
+  await tile.scrollIntoViewIfNeeded().catch(() => undefined);
+  await tile.hover({ force: true }).catch(() => undefined);
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(500);
+    const src = await tile
+      .locator("video")
+      .first()
+      .evaluate((v) => (v as HTMLVideoElement).currentSrc || (v as HTMLVideoElement).src)
+      .catch(() => "");
+    if (src) return src;
+  }
+  return "";
+}
+
 async function downloadViaFetch(
   page: Page,
   item: ResultItem,
   type: JobType,
   basePath: string,
 ): Promise<string> {
-  const src =
-    type === "video"
-      ? await page.evaluate(() => {
-          const v = document.querySelector<HTMLVideoElement>("video.main-video");
-          return v ? v.currentSrc || v.src : "";
-        })
-      : item.src;
+  let src = item.src;
+  if (type === "video") {
+    src = await page.evaluate(() => {
+      const v = document.querySelector<HTMLVideoElement>("video.main-video");
+      return v ? v.currentSrc || v.src : "";
+    });
+    // New layout has no viewer video: hover the tile on the grid, which mounts a <video>.
+    if (!src) src = await videoSrcFromTile(page, item);
+  }
   if (!src) throw new FlowPilotError("download_no_source", "flow.download.noSource");
   const response = await page.context().request.get(src);
   if (!response.ok()) {
@@ -113,12 +148,7 @@ export async function downloadResult(
     }
     return { path: file, mediaId };
   } finally {
-    await dismissOverlays(page);
-    await clickRobust(selectors.backButton.locate(page)).catch(() => undefined);
-    await page
-      .waitForURL((url) => !EDIT_PATH_RE.test(url.pathname), { timeout: 10000 })
-      .catch(() => undefined);
-    await dismissOverlays(page);
+    await leaveViewer(page);
   }
 }
 

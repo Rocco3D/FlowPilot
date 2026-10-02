@@ -71,6 +71,7 @@ export class RealFlowDriver implements FlowDriver {
   async run(
     job: Job,
     onProgress?: (status: JobStatus) => void,
+    onSpend?: (credits: number) => void,
   ): Promise<{ results: JobResult[]; credits: number }> {
     const request = job.request;
     const references = planReferences(request);
@@ -95,28 +96,39 @@ export class RealFlowDriver implements FlowDriver {
     await fillPrompt(page, request.prompt);
     const before = await snapshotResults(page, request.type);
     await submitGeneration(page);
-    const items = await waitForResults(page, request.type, before, request.outputs);
-
-    onProgress?.("downloading");
-    const outDir = request.outDir ?? config.outputDir;
-    const results: JobResult[] = [];
-    for (const [i, item] of items.entries()) {
-      const file = await downloadResult(page, item, {
-        type: request.type,
-        upscale: request.upscale,
-        outDir,
-        jobId: job.id,
-        n: i + 1,
-      });
-      writeSummary(file.path, { jobId: job.id, request, model, cost, flowUrl: page.url() });
-      results.push({
-        path: file.path,
-        type: request.type,
-        ...(file.mediaId ? { mediaId: file.mediaId } : {}),
-      });
-    }
     recordSpend({ jobId: job.id, model, credits: cost, at: new Date().toISOString() });
-    return { results, credits: cost };
+    onSpend?.(cost);
+    const projectUrl = page.url();
+    try {
+      const items = await waitForResults(page, request.type, before, request.outputs);
+
+      onProgress?.("downloading");
+      const outDir = request.outDir ?? config.outputDir;
+      const results: JobResult[] = [];
+      for (const [i, item] of items.entries()) {
+        const file = await downloadResult(page, item, {
+          type: request.type,
+          upscale: request.upscale,
+          outDir,
+          jobId: job.id,
+          n: i + 1,
+        });
+        writeSummary(file.path, { jobId: job.id, request, model, cost, flowUrl: projectUrl });
+        results.push({
+          path: file.path,
+          type: request.type,
+          ...(file.mediaId ? { mediaId: file.mediaId } : {}),
+        });
+      }
+      return { results, credits: cost };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new FlowPilotError(
+        error instanceof FlowPilotError ? error.code : "post_submit_failed",
+        "flow.gen.failedAfterSubmit",
+        { reason, url: projectUrl },
+      );
+    }
   }
 
   async close(options: { closeBrowser?: boolean } = {}): Promise<void> {

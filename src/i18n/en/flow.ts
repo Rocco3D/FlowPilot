@@ -29,6 +29,8 @@ export default {
   "gen.creditsExhausted": "Flow reports that the account is out of credits.",
   "gen.blocked": "Flow refused the prompt (content policy).",
   "gen.failed": "Flow reported that the generation failed.",
+  "gen.failedAfterSubmit":
+    "{reason} The generation was submitted and credits were spent; it exists in Flow: {url}",
   "refs.fileNotFound": "Input file not found: {path}.",
   "refs.framesVideoOnly": "Start and end frames are only available for video.",
   "refs.framesExclusive": "Frames cannot be combined with ingredients or characters.",

@@ -30,6 +30,8 @@ export default {
   "gen.creditsExhausted": "Flow segnala che l'account è senza crediti.",
   "gen.blocked": "Flow ha rifiutato il prompt (politica sui contenuti).",
   "gen.failed": "Flow ha segnalato che la generazione non è riuscita.",
+  "gen.failedAfterSubmit":
+    "{reason} La generazione è stata inviata e i crediti sono stati spesi; esiste in Flow: {url}",
   "refs.fileNotFound": "File di input non trovato: {path}.",
   "refs.framesVideoOnly": "I fotogrammi iniziale e finale sono disponibili solo per i video.",
   "refs.framesExclusive": "I fotogrammi non si possono combinare con ingredienti o personaggi.",
