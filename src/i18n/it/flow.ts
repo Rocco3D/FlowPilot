@@ -20,6 +20,8 @@ export default {
   "gen.noneOffered": "nessuno",
   "gen.agentModeOn": "La modalità Agent di Flow è attiva e non è stato possibile disattivarla.",
   "gen.creditsUnreadable": "Non riesco a leggere il costo dei crediti da Flow.",
+  "gen.referencesNotCleared":
+    "Impossibile rimuovere i riferimenti lasciati nell'area del prompt da un job precedente.",
   "gen.promptNotSet": "La casella del prompt è vuota dopo aver digitato il prompt.",
   "gen.submitNotReady": "Il pulsante Avvia generazione non è diventato abilitato.",
   "gen.timeout": "Flow non ha completato la generazione in {minutes} minuti.",

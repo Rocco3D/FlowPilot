@@ -20,6 +20,8 @@ export default {
   "gen.noneOffered": "none",
   "gen.agentModeOn": "Flow's Agent mode is on and could not be turned off.",
   "gen.creditsUnreadable": "Could not read the credit cost from Flow.",
+  "gen.referencesNotCleared":
+    "Could not remove the references left in the prompt area by a previous job.",
   "gen.promptNotSet": "The prompt box is empty after typing the prompt.",
   "gen.submitNotReady": "The Start generation button did not become enabled.",
   "gen.timeout": "Flow did not finish the generation in {minutes} minutes.",

@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import { FlowPilotError } from "../../core/errors.js";
+import type { SelftestReport } from "../../core/schemas.js";
 import { t } from "../../i18n/index.js";
 import { connect, show, type JsonOpt } from "../context.js";
 
@@ -26,15 +27,7 @@ export function registerInfo(program: Command): void {
     .option("--json", t("cli.jsonOption"))
     .action(async (opts: JsonOpt, cmd: Command) => {
       const r = await (await connect(cmd)).selftest();
-      show(opts, r, () =>
-        [
-          ...r.checks.map(
-            (c) =>
-              `${t(c.ok ? "cli.selftest.pass" : "cli.selftest.fail")} ${c.name}${c.detail ? ` - ${c.detail}` : ""}`,
-          ),
-          t(r.ok ? "cli.selftest.allOk" : "cli.selftest.someFailed"),
-        ].join("\n"),
-      );
+      show(opts, r, () => formatSelftest(r));
       if (!r.ok) throw new FlowPilotError("selftest_failed", "cli.selftest.someFailed");
     });
 
@@ -75,6 +68,16 @@ export function registerInfo(program: Command): void {
         ].join("\n"),
       );
     });
+}
+
+/** Check lines plus the all-ok line; the failure line comes from the thrown error, once. */
+export function formatSelftest(r: SelftestReport): string {
+  const lines = r.checks.map(
+    (c) =>
+      `${t(c.ok ? "cli.selftest.pass" : "cli.selftest.fail")} ${c.name}${c.detail ? ` - ${c.detail}` : ""}`,
+  );
+  if (r.ok) lines.push(t("cli.selftest.allOk"));
+  return lines.join("\n");
 }
 
 function yesNo(value: boolean): string {

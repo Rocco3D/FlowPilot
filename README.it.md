@@ -18,7 +18,13 @@ FlowPilot è un servizio locale che controlla Google Flow (generazione di immagi
 
 ## Installazione
 
-FlowPilot si installa dal codice sorgente per ora. Il pacchetto npm è in arrivo.
+FlowPilot non è ancora su npm. Installalo da GitHub con un solo comando (il repository potrebbe essere privato: in tal caso serve l'accesso a GitHub, ad esempio `gh` autenticato o un token):
+
+```bash
+npm install -g github:Rocco3D/FlowPilot
+```
+
+Oppure installalo dal codice sorgente:
 
 ```bash
 git clone https://github.com/anthropics/flowpilot.git

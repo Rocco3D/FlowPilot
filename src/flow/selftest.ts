@@ -2,7 +2,7 @@ import type { Page } from "playwright-core";
 import type { SelftestReport } from "../core/schemas.js";
 import { createProject, isSignedIn, listProjects, openHome, openProject } from "./navigation.js";
 import { dismissOverlays } from "./overlays.js";
-import { PROJECT_PAGE_SELECTORS, selectors } from "./selectors.js";
+import { PROJECT_PAGE_SELECTORS, selectors, type SelectorDef } from "./selectors.js";
 import { ensureClassicComposer } from "./settings-apply.js";
 import { openModelMenu, openSettings, parseCredits, readModelMenu } from "./settings-read.js";
 
@@ -50,25 +50,32 @@ export async function runSelftest(page: Page): Promise<SelftestReport> {
   });
   if (!opened) return report(checks);
 
-  for (const key of PROJECT_PAGE_SELECTORS) {
-    await check(checks, `selector:${key}`, async () => {
-      const count = await selectors[key].locate(page).count();
-      if (count === 0) throw new Error(`Not found: ${selectors[key].describe}`);
-      return selectors[key].describe;
-    });
-  }
-
-  await check(checks, "add-ingredients-button", async () => {
-    if ((await selectors.addIngredientsButton.locate(page).count()) === 0) {
-      throw new Error(`Not found: ${selectors.addIngredientsButton.describe}`);
-    }
-    return selectors.addIngredientsButton.describe;
-  });
+  // The composer renders after the project page loads; checking too early gives false failures.
+  await selectors.promptBox
+    .locate(page)
+    .first()
+    .waitFor({ state: "visible", timeout: 15000 })
+    .catch(() => undefined);
 
   await check(checks, "agent-mode-off", async () => {
     await ensureClassicComposer(page);
     return undefined;
   });
+
+  const waitVisible = async (def: SelectorDef) => {
+    try {
+      await def.locate(page).first().waitFor({ state: "visible", timeout: 5000 });
+    } catch {
+      throw new Error(`Not found: ${def.describe}`);
+    }
+    return def.describe;
+  };
+
+  for (const key of PROJECT_PAGE_SELECTORS) {
+    await check(checks, `selector:${key}`, () => waitVisible(selectors[key]));
+  }
+
+  await check(checks, "add-ingredients-button", () => waitVisible(selectors.addIngredientsButton));
 
   await check(checks, "settings-popover", async () => {
     await openSettings(page);

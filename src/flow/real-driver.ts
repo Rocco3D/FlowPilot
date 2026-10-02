@@ -1,6 +1,7 @@
 import type { Page } from "playwright-core";
 import { BrowserSession } from "../browser/session.js";
 import { loadConfig } from "../core/config.js";
+import { FlowPilotError } from "../core/errors.js";
 import { checkSpend, recordSpend } from "../core/credits.js";
 import { createLogger } from "../core/logger.js";
 import type {
@@ -12,6 +13,7 @@ import type {
   SessionStatus,
 } from "../core/schemas.js";
 import { t } from "../i18n/index.js";
+import { clearComposer } from "./cleanup.js";
 import { downloadResult, writeSummary } from "./download.js";
 import type { FlowDriver } from "./driver.js";
 import { discoverModels } from "./models.js";
@@ -35,11 +37,17 @@ export class RealFlowDriver implements FlowDriver {
   ) {}
 
   async doctor(): Promise<SessionStatus> {
-    const status = await this.session.status();
-    if (!status.connected) return status;
-    const page = await this.session.page();
-    if (!page.url().includes("flow.google.com")) await openHome(page);
+    // Open the session like jobs do (launch or attach), so the sign-in check is real.
+    let page: Page;
+    try {
+      page = await this.session.page();
+    } catch (error) {
+      if (!(error instanceof FlowPilotError)) throw error;
+      return { ...(await this.session.status()), signedIn: false, message: error.message };
+    }
+    await openHome(page);
     const signedIn = await isSignedIn(page);
+    const status = await this.session.status();
     return {
       ...status,
       signedIn,
@@ -71,6 +79,7 @@ export class RealFlowDriver implements FlowDriver {
     const page = await this.session.page();
     await this.openProjectFor(page, request.project);
     await ensureClassicComposer(page);
+    await clearComposer(page);
 
     const { cost, model } = await applySettings(page, request);
     checkSpend(cost, {

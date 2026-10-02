@@ -153,6 +153,16 @@ export const selectors = {
     describe: 'Prompt area button with aria-label "Add ingredients to the prompt box"',
     locate: (page) => page.locator('button[aria-label="Add ingredients to the prompt box"]'),
   },
+  ingredientChips: {
+    describe: 'Attached reference buttons named "Ingredient" inside flow-prompt-box',
+    locate: (page) =>
+      page.locator("flow-prompt-box").getByRole("button", { name: "Ingredient", exact: true }),
+  },
+  clearPromptButton: {
+    describe: 'Prompt area button named "Clear prompt"',
+    locate: (page) =>
+      page.locator("flow-prompt-box").getByRole("button", { name: "Clear prompt", exact: true }),
+  },
   mediaDialog: {
     describe: 'Dialog "Add assets to the project" (accessible name matches /add assets/i)',
     locate: (page) => dialogOf(page),
