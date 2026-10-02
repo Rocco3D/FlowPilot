@@ -262,7 +262,9 @@ FlowPilot is unofficial. It is not affiliated with or endorsed by Google. It aut
 
 ## License
 
-MIT, see `LICENSE`.
+The code and documentation are released under the MIT License, see `LICENSE`.
+
+**Logos and names are excluded:** the FlowPilot logo, the Rocco logo and the name Rocco™ (files in `assets/brand/`) are not covered by the MIT License. All rights reserved; they may not be reused without permission. See `assets/brand/NOTICE.md`.
 
 ## Credits
 
