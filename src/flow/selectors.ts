@@ -138,6 +138,65 @@ export const selectors = {
     describe: 'Menu item "Download media"',
     locate: (page) => page.locator("[role=menuitem]").filter({ hasText: /download media/i }),
   },
+  addIngredientsButton: {
+    describe: 'Prompt area button with aria-label "Add ingredients to the prompt box"',
+    locate: (page) => page.locator('button[aria-label="Add ingredients to the prompt box"]'),
+  },
+  mediaDialog: {
+    describe: "Add media dialog (role dialog or aria-modal)",
+    locate: (page) => page.locator("[role=dialog],[aria-modal=true]"),
+  },
+  mediaDialogUpload: {
+    describe: 'Add media dialog button "Upload media" (or any "Upload ..." variant)',
+    locate: (page) =>
+      page
+        .locator("[role=dialog],[aria-modal=true]")
+        .first()
+        .locator("button")
+        .filter({ hasText: /upload/i }),
+  },
+  mediaDialogSelected: {
+    describe: "Selected tile in the add media dialog (role option, aria-selected true)",
+    locate: (page) =>
+      page
+        .locator("[role=dialog],[aria-modal=true]")
+        .first()
+        .locator('[role=option][aria-selected="true"]'),
+  },
+  mediaDialogTiles: {
+    describe: "Tiles of the add media dialog (role option)",
+    locate: (page) =>
+      page.locator("[role=dialog],[aria-modal=true]").first().locator("[role=option]"),
+  },
+  mediaDialogConfirm: {
+    describe: 'Add media dialog confirm button "Add to Prompt" (or "Add to ..." variant)',
+    locate: (page) =>
+      page
+        .locator("[role=dialog],[aria-modal=true]")
+        .first()
+        .locator("button")
+        .filter({ hasText: /add to (prompt|scene|project)/i }),
+  },
+  mediaDialogCharactersTab: {
+    describe: 'Add media dialog tab or button "Characters"',
+    locate: (page) =>
+      page
+        .locator("[role=dialog],[aria-modal=true]")
+        .first()
+        .locator("button, [role=tab]")
+        .filter({ hasText: /characters/i }),
+  },
+  attachedReferences: {
+    describe:
+      "Images of attached references inside the prompt area (smallest container holding the prompt box and the submit button)",
+    locate: (page) =>
+      page
+        .locator("div")
+        .filter({ has: page.locator('div.ProseMirror[contenteditable="true"]') })
+        .filter({ has: page.getByRole("button", { name: "Start generation", exact: true }) })
+        .last()
+        .locator("img"),
+  },
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
     locate: (page) => page.locator(".cdk-overlay-backdrop-showing"),
@@ -159,3 +218,13 @@ export const tierItem = (page: Page, tier: RegExp) =>
   page.locator("[role=menuitem]").filter({ hasText: tier });
 export const resultImage = (page: Page, src: string) =>
   page.locator(`img[src=${JSON.stringify(src)}]`);
+
+/** Video sub-mode chips in the settings popover. */
+export const subModeChip = (page: Page, mode: "frames" | "ingredients") =>
+  chip(page, mode === "frames" ? /Frames$/ : /Ingredients$/);
+/** Empty frame slot of the prompt area; a filled slot no longer shows its label. */
+export const frameSlot = (page: Page, slot: "Start" | "End") =>
+  page.getByText(slot, { exact: true });
+/** Tile of a saved character in the add media dialog, by its exact name. */
+export const characterTile = (page: Page, name: string) =>
+  page.locator("[role=dialog],[aria-modal=true]").first().getByText(name, { exact: true });

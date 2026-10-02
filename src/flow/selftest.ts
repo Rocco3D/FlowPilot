@@ -57,6 +57,13 @@ export async function runSelftest(page: Page): Promise<SelftestReport> {
     });
   }
 
+  await check(checks, "add-ingredients-button", async () => {
+    if ((await selectors.addIngredientsButton.locate(page).count()) === 0) {
+      throw new Error(`Not found: ${selectors.addIngredientsButton.describe}`);
+    }
+    return selectors.addIngredientsButton.describe;
+  });
+
   await check(checks, "settings-popover", async () => {
     await openSettings(page);
     const chips = await selectors.outputChips.locate(page).count();
