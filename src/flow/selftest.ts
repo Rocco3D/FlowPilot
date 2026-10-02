@@ -2,7 +2,7 @@ import type { Page } from "playwright-core";
 import type { SelftestReport } from "../core/schemas.js";
 import { createProject, isSignedIn, listProjects, openHome, openProject } from "./navigation.js";
 import { dismissOverlays } from "./overlays.js";
-import { PROJECT_PAGE_SELECTORS, selectors, type SelectorDef } from "./selectors.js";
+import { PROJECT_PAGE_SELECTORS, frameSlot, selectors, type SelectorDef } from "./selectors.js";
 import { ensureClassicComposer } from "./settings-apply.js";
 import { openModelMenu, openSettings, parseCredits, readModelMenu } from "./settings-read.js";
 
@@ -75,7 +75,19 @@ export async function runSelftest(page: Page): Promise<SelftestReport> {
     await check(checks, `selector:${key}`, () => waitVisible(selectors[key]));
   }
 
-  await check(checks, "add-ingredients-button", () => waitVisible(selectors.addIngredientsButton));
+  // Frames mode shows the Start/End slots instead of the add-ingredients button.
+  await check(checks, "references-entry", async () => {
+    const ingredients = selectors.addIngredientsButton.locate(page).first();
+    const start = frameSlot(page, "Start").first();
+    try {
+      await ingredients.or(start).first().waitFor({ state: "visible", timeout: 5000 });
+    } catch {
+      throw new Error(
+        `Not found: ${selectors.addIngredientsButton.describe}, nor the "Start" frame slot`,
+      );
+    }
+    return (await ingredients.isVisible()) ? "add-ingredients button" : "Start frame slot";
+  });
 
   await check(checks, "settings-popover", async () => {
     await openSettings(page);
