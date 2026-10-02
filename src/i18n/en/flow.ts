@@ -45,6 +45,8 @@ export default {
   "download.viewerNotOpened": "Flow did not open the result viewer.",
   "download.tierLocked": "The requested download tier needs a Flow plan upgrade.",
   "download.fetchFailed": "Could not download a result (HTTP {status}).",
+  "download.upscaleUnavailable":
+    "The requested download quality ({quality}) could not be downloaded. The original is still in Flow at {url}.",
   "download.noSource": "Could not find the media file of a result.",
   "driver.notSignedIn": "Chrome is connected but not signed in to Flow. Run the login command.",
   "driver.fatal": "FlowPilot service failed: {reason}",

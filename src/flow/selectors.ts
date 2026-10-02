@@ -246,6 +246,23 @@ export const resolutionChips = (page: Page) => chip(page, RESOLUTION_CHIP_RE);
 export const durationChips = (page: Page) => chip(page, DURATION_CHIP_RE);
 export const outputChip = (page: Page, n: number) => chip(page, new RegExp(`^x${n}$`));
 
+/** Result tiles of the project grid: video tiles and image tile containers. */
+export const TILE_CONTAINER_CSS = "flow-video-tile, flow-grid-tile-container, flow-tile-container";
+/** Tile menu item "Download" (not the viewer's "Download media"). */
+export const DOWNLOAD_ITEM_RE = /\bdownload\b(?!\s+media)/i;
+
+/** Tile containing the result thumbnail with this src (outermost first in DOM order). */
+export const tileBySrc = (page: Page, src: string) =>
+  page.locator(TILE_CONTAINER_CSS).filter({ has: resultImage(page, src) });
+/** Tile at the recorded position among the page's video tiles. */
+export const videoTileAt = (page: Page, index: number) =>
+  page.locator("flow-video-tile").nth(index);
+/** The tile's own "More options" button, scoped inside the tile (never the global app menu). */
+export const tileMoreOptions = (tile: Locator) =>
+  tile.locator('button[aria-label="More options"]').first();
+export const tileDownloadItem = (page: Page) =>
+  page.locator("[role=menuitem]").filter({ hasText: DOWNLOAD_ITEM_RE });
+
 export const tierItem = (page: Page, tier: RegExp) =>
   page.locator("[role=menuitem]").filter({ hasText: tier });
 export const resultImage = (page: Page, src: string) =>

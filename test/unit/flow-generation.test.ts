@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  assertFetchAllowed,
+  chooseTier,
   extensionFor,
   resultBaseName,
   tierPattern,
@@ -102,6 +104,23 @@ describe("file naming", () => {
     expect(tierPattern(undefined).test("720p Original size")).toBe(true);
     expect(tierPattern("1080p").test("1080p Upscaled")).toBe(true);
     expect(tierPattern("4k").test("4K Upscaled")).toBe(true);
+  });
+
+  it("chooses the tier item and rejects gated ones", () => {
+    const labels = ["270p Animated GIF", "720p Original size", "1080p Upscaled", "4K Upscaled"];
+    expect(chooseTier(labels, tierPattern(undefined))).toEqual({ kind: "pick", index: 1 });
+    expect(chooseTier(labels, tierPattern("1080p"))).toEqual({ kind: "pick", index: 2 });
+    expect(chooseTier(labels, tierPattern("4k"))).toEqual({ kind: "pick", index: 3 });
+    expect(chooseTier(["2K Upscaled"], tierPattern("1080p"))).toEqual({ kind: "pick", index: 0 });
+    expect(chooseTier(["4K Upgrade"], tierPattern("4k"))).toEqual({ kind: "locked" });
+    expect(chooseTier(["720p Original size"], tierPattern("4k"))).toEqual({ kind: "none" });
+  });
+
+  it("allows the direct fetch only for the original quality", () => {
+    expect(() => assertFetchAllowed(undefined, "https://flow/p")).not.toThrow();
+    expect(() => assertFetchAllowed("1080p", "https://flow/p")).toThrowError(
+      expect.objectContaining({ code: "upscale_unavailable" }),
+    );
   });
 
   it("writes the summary next to the result", () => {
