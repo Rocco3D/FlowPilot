@@ -7,11 +7,13 @@ import { JobQueue } from "../../src/core/queue.js";
 import type { Job, JobRequest } from "../../src/core/schemas.js";
 import type { FlowDriver } from "../../src/flow/driver.js";
 import { FakeDriver } from "../fakes/fake-driver.js";
+import { setLocale } from "../../src/i18n/index.js";
 
 let dir: string;
 const req: JobRequest = { type: "image", prompt: "a cat", outputs: 1 };
 
 beforeEach(() => {
+  setLocale("en");
   dir = path.resolve(
     import.meta.dirname,
     "../../temp/tests",
