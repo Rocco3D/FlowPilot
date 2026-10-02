@@ -6,6 +6,7 @@ import type { Job, JobResult } from "../../src/core/schemas.js";
 import { FlowPilotError } from "../../src/core/errors.js";
 import type { SessionStatus } from "../../src/core/schemas.js";
 import { FakeDriver } from "../fakes/fake-driver.js";
+import { setLocale } from "../../src/i18n/index.js";
 
 /** Like the fake driver, but writes a real file for each result. */
 class FileDriver extends FakeDriver {
@@ -30,6 +31,7 @@ let token: string;
 const imageJob = { type: "image", prompt: "a cat" };
 
 beforeEach(async () => {
+  setLocale("en");
   dir = path.resolve(
     import.meta.dirname,
     "../../temp/tests",

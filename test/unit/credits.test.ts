@@ -3,10 +3,11 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { checkSpend, monthTotal, readLedger, recordSpend } from "../../src/core/credits.js";
 import { FlowPilotError } from "../../src/core/errors.js";
-import { t } from "../../src/i18n/index.js";
+import { t, setLocale } from "../../src/i18n/index.js";
 
 let dir: string;
 beforeEach(() => {
+  setLocale("en");
   dir = path.join(process.cwd(), "temp", "tests", `credits-${process.pid}-${Date.now()}`);
   fs.mkdirSync(dir, { recursive: true });
 });

@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { Client } from "../../src/cli/client.js";
 import { run } from "../../src/cli/program.js";
 import { configDir } from "../../src/core/paths.js";
+import { setLocale } from "../../src/i18n/index.js";
 
 const root = path.resolve("temp", "tests", `cli-${process.pid}-${Date.now()}`);
 const envKeys = [
@@ -127,6 +128,7 @@ afterAll(async () => {
 });
 
 beforeEach(() => {
+  setLocale("en");
   seen = [];
   jobPolls = 0;
   finalStatus = "done";
