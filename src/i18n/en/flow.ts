@@ -9,4 +9,8 @@ export default {
   "session.statusRunning":
     "Chrome is running on the profile but no debugging connection is available.",
   "session.statusStopped": "Chrome is not running on the profile.",
+  "nav.projectNotFound": "No Flow project matches {project}.",
+  "nav.projectNotOpened": "Flow did not open a project page.",
+  "models.settingsNotOpen": "The Flow settings popover did not open.",
+  "models.menuNotOpen": "The Flow model menu did not open.",
 } as const;
