@@ -33,6 +33,8 @@ export default {
   "refs.framesVideoOnly": "Start and end frames are only available for video.",
   "refs.framesExclusive": "Frames cannot be combined with ingredients or characters.",
   "refs.dialogNotOpen": "The Flow add media dialog did not open.",
+  "refs.framePanelNotOpen": "The Flow frame picker did not open or did not close.",
+  "refs.frameNotFilled": "The {slot} frame slot is still empty after selecting the image.",
   "refs.uploadFailed": "Flow did not accept the uploaded file {path}.",
   "refs.characterNotFound": "No saved Flow character is named {name}.",
   "refs.notAttached": "Expected {expected} new references in the prompt area but found {found}.",

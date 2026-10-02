@@ -251,9 +251,27 @@ export const resultImage = (page: Page, src: string) =>
 /** Video sub-mode chips in the settings popover. */
 export const subModeChip = (page: Page, mode: "frames" | "ingredients") =>
   chip(page, mode === "frames" ? /Frames$/ : /Ingredients$/);
-/** Empty frame slot of the prompt area; a filled slot no longer shows its label. */
+/** Frame slot button of the prompt area; a filled slot no longer has the plain "Start"/"End" name. */
 export const frameSlot = (page: Page, slot: "Start" | "End") =>
-  page.getByText(slot, { exact: true });
+  page.locator("flow-prompt-box").getByRole("button", { name: slot, exact: true });
+const panelOf = (page: Page) => page.locator("div.add-menu-popover-container");
+/** Frame picker panel opened by a frame slot ("Select a frame image"). */
+export const framePanel = (page: Page) => panelOf(page).first();
+export const framePanelSearch = (page: Page) =>
+  panelOf(page).getByRole("textbox", { name: /search assets/i });
+export const framePanelTab = (page: Page, name: "Images" | "Uploads") =>
+  panelOf(page).locator('mat-list-item[role="tab"]').filter({ hasText: name });
+export const framePanelUpload = (page: Page) =>
+  panelOf(page).getByRole("button", { name: /upload media/i });
+export const framePanelConfirm = (page: Page) =>
+  panelOf(page).getByRole("button", { name: /add to prompt/i });
+export const framePanelClose = (page: Page) =>
+  panelOf(page).getByRole("button", { name: "Close", exact: true });
+/** Asset option of the frame picker whose name starts with an uploaded file's base name. */
+export const framePanelAsset = (page: Page, basename: string) =>
+  panelOf(page).getByRole("option", {
+    name: new RegExp(`^${basename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+  });
 /** Asset option in the add assets dialog whose name starts with the exact title. */
 export const assetOption = (page: Page, name: string) =>
   dialogOf(page).getByRole("option").filter({ hasText: name });

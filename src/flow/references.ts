@@ -5,7 +5,20 @@ import { FlowPilotError } from "../core/errors.js";
 import type { Logger } from "../core/logger.js";
 import type { JobRequest } from "../core/schemas.js";
 import { clickRobust, dismissOverlays } from "./overlays.js";
-import { assetForFile, assetOption, frameSlot, selectors, subModeChip } from "./selectors.js";
+import {
+  assetForFile,
+  assetOption,
+  frameSlot,
+  framePanel,
+  framePanelAsset,
+  framePanelClose,
+  framePanelConfirm,
+  framePanelSearch,
+  framePanelTab,
+  framePanelUpload,
+  selectors,
+  subModeChip,
+} from "./selectors.js";
 import { openSettings } from "./settings-read.js";
 
 type Slot = "Start" | "End";
@@ -168,8 +181,74 @@ async function fillFrame(
   const target = frameSlot(page, slot).first();
   if ((await target.count()) === 0) return false;
   await clickRobust(target);
-  await uploadAndConfirm(page, await waitDialog(page), file, opts);
+  try {
+    await pickFrame(page, file, opts);
+    const filled = async () =>
+      (await frameSlot(page, slot).count()) === 0 ||
+      (await frameSlot(page, slot).locator("img").count()) > 0;
+    for (let i = 0; i < 10 && !(await filled()); i += 1) await page.waitForTimeout(500);
+    if (!(await filled())) {
+      throw new FlowPilotError("references_not_attached", "flow.refs.frameNotFilled", { slot });
+    }
+  } catch (error) {
+    await closeFramePanel(page);
+    throw error;
+  }
   return true;
+}
+
+async function closeFramePanel(page: Page): Promise<void> {
+  const panel = framePanel(page);
+  if (!(await panel.isVisible().catch(() => false))) return;
+  await clickRobust(framePanelClose(page)).catch(() => undefined);
+  await panel.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
+}
+
+/** In the open frame picker: selects the asset named like the file (uploading if needed), confirms. */
+async function pickFrame(page: Page, file: string, opts: UploadOptions): Promise<void> {
+  const panel = framePanel(page);
+  await panel.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {
+    throw new FlowPilotError("references_not_attached", "flow.refs.framePanelNotOpen");
+  });
+  const base = path.parse(file).name;
+  const asset = framePanelAsset(page, base).first();
+  await framePanelSearch(page)
+    .first()
+    .fill(base)
+    .catch(() => undefined);
+  const existing = await asset
+    .waitFor({ state: "visible", timeout: 3000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!existing) {
+    const [chooser] = await Promise.all([
+      page.waitForEvent("filechooser", { timeout: 15_000 }),
+      clickRobust(framePanelUpload(page)),
+    ]);
+    await chooser.setFiles(file);
+    await answerRights(page, file, opts);
+    const tab = framePanelTab(page, "Uploads").first();
+    let found = false;
+    for (let i = 0; i < 60 && !found; i += 1) {
+      found = await asset.isVisible().catch(() => false);
+      if (!found) {
+        if (i % 6 === 5 && (await tab.isVisible().catch(() => false))) {
+          await clickRobust(tab).catch(() => undefined);
+        }
+        await page.waitForTimeout(500);
+      }
+    }
+    if (!found) {
+      throw new FlowPilotError("references_not_attached", "flow.refs.uploadFailed", {
+        path: file,
+      });
+    }
+  }
+  await clickRobust(asset);
+  await clickRobust(framePanelConfirm(page));
+  await panel.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {
+    throw new FlowPilotError("references_not_attached", "flow.refs.framePanelNotOpen");
+  });
 }
 
 /** Picks a saved character: category filter, search by name, click the matching asset. */
