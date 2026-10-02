@@ -50,6 +50,13 @@ export const FAILURE_PATTERNS: { code: string; key: string; re: RegExp }[] = [
   },
 ];
 
+/** Page text that is user content or UI chrome, never a failure banner. */
+export const BANNER_EXCLUDED_CSS =
+  '[contenteditable], flow-video-tile, figure, figcaption, [data-radix-popper-content-wrapper], [role="menu"]';
+/** Containers that carry failure messages when present. */
+export const BANNER_ALERT_CSS =
+  '[role="alert"], [role="status"], [aria-live]:not([aria-live="off"]), [class*="snackbar" i], [class*="toast" i]';
+
 /** Download tier patterns: default original, then 1080p/2K and 4K upscales. */
 export const TIER_RE = { original: /original/i, "1080p": /2K|1080p/i, "4k": /4K/i } as const;
 

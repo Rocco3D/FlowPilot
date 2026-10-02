@@ -1,7 +1,14 @@
 import type { Page } from "playwright-core";
 import { FlowPilotError } from "../core/errors.js";
 import type { JobType } from "../core/schemas.js";
-import { FAILURE_PATTERNS, FLOW_IMAGE_RE, LEGACY_MEDIA_RE, LEGACY_NAME_RE } from "./selectors.js";
+import {
+  BANNER_ALERT_CSS,
+  BANNER_EXCLUDED_CSS,
+  FAILURE_PATTERNS,
+  FLOW_IMAGE_RE,
+  LEGACY_MEDIA_RE,
+  LEGACY_NAME_RE,
+} from "./selectors.js";
 
 export interface ResultItem {
   src: string;
@@ -57,8 +64,46 @@ async function readResults(page: Page, type: JobType): Promise<ResultItem[]> {
   return items;
 }
 
+export interface TextChunk {
+  text: string;
+  excluded: boolean;
+  alert: boolean;
+}
+
+/** Classifies page text, ignoring excluded chunks and preferring alert containers. */
+export function classifyChunks(chunks: TextChunk[]): { code: string; key: string } | undefined {
+  const usable = chunks.filter((c) => !c.excluded);
+  const alerts = usable.filter((c) => c.alert);
+  return classifyFailure((alerts.length > 0 ? alerts : usable).map((c) => c.text).join("\n"));
+}
+
 const readFailure = async (page: Page) =>
-  classifyFailure(await page.evaluate(() => document.body.innerText));
+  classifyChunks(
+    await page.evaluate(
+      ({ excludedCss, alertCss }) => {
+        const chunks: TextChunk[] = [];
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node.textContent?.trim();
+          const el = node.parentElement;
+          if (!text || !el) continue;
+          // A card holding a result image echoes the prompt as a caption.
+          let card: Element | null = el;
+          let hasResult = false;
+          for (let i = 0; i < 3 && card && !hasResult; i += 1, card = card.parentElement) {
+            hasResult = card.querySelector('img[src*="flow-content.google"]') !== null;
+          }
+          chunks.push({
+            text,
+            excluded: hasResult || el.closest(excludedCss) !== null,
+            alert: el.closest(alertCss) !== null,
+          });
+        }
+        return chunks;
+      },
+      { excludedCss: BANNER_EXCLUDED_CSS, alertCss: BANNER_ALERT_CSS },
+    ),
+  );
 
 /** Records what is on the page before submitting, so only new results and banners count. */
 export async function snapshotResults(page: Page, type: JobType): Promise<ResultsSnapshot> {

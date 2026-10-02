@@ -8,7 +8,7 @@ import {
   writeSummary,
 } from "../../src/flow/download.js";
 import { splitPrompt } from "../../src/flow/prompt.js";
-import { classifyFailure, classifyResultSrc } from "../../src/flow/results.js";
+import { classifyChunks, classifyFailure, classifyResultSrc } from "../../src/flow/results.js";
 import { diffSettings } from "../../src/flow/settings-apply.js";
 
 describe("classifyResultSrc", () => {
@@ -116,5 +116,22 @@ describe("splitPrompt", () => {
 
   it("keeps a single line whole", () => {
     expect(splitPrompt("one line")).toEqual(["one line"]);
+  });
+});
+
+describe("classifyChunks", () => {
+  const chunk = (text: string, excluded = false, alert = false) => ({ text, excluded, alert });
+
+  it("ignores prompt text that looks like a failure", () => {
+    expect(classifyChunks([chunk("something went wrong", true), chunk("Ready")])).toBeUndefined();
+  });
+
+  it("detects a failure in normal text", () => {
+    expect(classifyChunks([chunk("Something went wrong")])?.code).toBe("generation_failed");
+  });
+
+  it("prefers alert containers over other text", () => {
+    const found = classifyChunks([chunk("Generation failed"), chunk("Rate limit", false, true)]);
+    expect(found?.code).toBe("rate_limited");
   });
 });
