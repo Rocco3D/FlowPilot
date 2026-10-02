@@ -10,15 +10,17 @@ export function splitPrompt(text: string): string[] {
 
 /** Replaces the prompt box content with `text`, using Shift+Enter between lines. */
 export async function fillPrompt(page: Page, text: string): Promise<void> {
-  const box = selectors.promptBox.locate(page);
-  await clickRobust(box);
+  const box = selectors.promptBox.locate(page).first();
+  // A click on the box can time out (verified live); focusing the element directly works.
+  await clickRobust(box).catch(() => undefined);
+  await box.evaluate((el) => (el as HTMLElement).focus());
   await page.keyboard.press("ControlOrMeta+A");
   await page.keyboard.press("Backspace");
   for (const [i, line] of splitPrompt(text).entries()) {
     if (i > 0) await page.keyboard.press("Shift+Enter");
     if (line) await page.keyboard.insertText(line);
   }
-  if (!((await box.first().textContent()) ?? "").trim()) {
+  if (!((await box.textContent()) ?? "").trim()) {
     throw new FlowPilotError("prompt_not_set", "flow.gen.promptNotSet");
   }
 }
