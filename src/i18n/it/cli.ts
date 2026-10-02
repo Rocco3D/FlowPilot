@@ -15,6 +15,10 @@ export default {
   "doctor.chrome": "Chrome in esecuzione: {value}",
   "doctor.connected": "Collegato: {value}",
   "doctor.signedIn": "Accesso effettuato: {value}",
+  "login.description": "Accedi a Google Flow in una finestra Chrome ordinaria",
+  "login.profileOption": "Nome profilo",
+  "login.instructions":
+    "Si è aperta una finestra Chrome (profilo: {dir}).\nAccedi con il tuo account Google in quella finestra e accetta i termini di Flow se richiesto.\nPoi chiudi la finestra ed esegui: flowpilot doctor",
   "selftest.description": "Esegui l'auto-test del servizio",
   "selftest.pass": "OK",
   "selftest.fail": "ERRORE",
