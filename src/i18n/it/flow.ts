@@ -20,6 +20,8 @@ export default {
   "gen.noneOffered": "nessuno",
   "gen.agentModeOn": "La modalità Agent di Flow è attiva e non è stato possibile disattivarla.",
   "gen.creditsUnreadable": "Non riesco a leggere il costo dei crediti da Flow.",
+  "gen.referencesNotCleared":
+    "Impossibile rimuovere i riferimenti lasciati nell'area del prompt da un job precedente.",
   "gen.promptNotSet": "La casella del prompt è vuota dopo aver digitato il prompt.",
   "gen.submitNotReady": "Il pulsante Avvia generazione non è diventato abilitato.",
   "gen.timeout": "Flow non ha completato la generazione in {minutes} minuti.",
@@ -28,10 +30,15 @@ export default {
   "gen.creditsExhausted": "Flow segnala che l'account è senza crediti.",
   "gen.blocked": "Flow ha rifiutato il prompt (politica sui contenuti).",
   "gen.failed": "Flow ha segnalato che la generazione non è riuscita.",
+  "gen.failedAfterSubmit":
+    "{reason} La generazione è stata inviata e i crediti sono stati spesi; esiste in Flow: {url}",
   "refs.fileNotFound": "File di input non trovato: {path}.",
   "refs.framesVideoOnly": "I fotogrammi iniziale e finale sono disponibili solo per i video.",
   "refs.framesExclusive": "I fotogrammi non si possono combinare con ingredienti o personaggi.",
   "refs.dialogNotOpen": "La finestra Flow per aggiungere i media non si è aperta.",
+  "refs.framePanelNotOpen": "Il selettore di fotogrammi di Flow non si è aperto o non si è chiuso.",
+  "refs.frameNotFilled":
+    "Lo slot del fotogramma {slot} è ancora vuoto dopo aver scelto l'immagine.",
   "refs.uploadFailed": "Flow non ha accettato il file caricato {path}.",
   "refs.characterNotFound": "Nessun personaggio Flow salvato si chiama {name}.",
   "refs.notAttached":
@@ -42,6 +49,7 @@ export default {
   "download.tierLocked": "Il tier di download richiesto necessita un aggiornamento del piano Flow.",
   "download.fetchFailed": "Non riesco a scaricare un risultato (HTTP {status}).",
   "download.noSource": "Non riesco a trovare il file multimediale di un risultato.",
-  "driver.notSignedIn": "Chrome è collegato ma non è acceso a Flow. Esegui il comando di accesso.",
+  "driver.notSignedIn":
+    "Chrome è collegato ma non ha effettuato l'accesso a Flow. Esegui il comando di accesso.",
   "driver.fatal": "Il servizio FlowPilot è fallito: {reason}",
 } as const;

@@ -96,9 +96,15 @@ export class JobQueue extends EventEmitter {
       startedAt: new Date().toISOString(),
     });
     try {
-      const { results, credits } = await this.driver.run(job, (status) => {
-        this.change(job.id, { status });
-      });
+      const { results, credits } = await this.driver.run(
+        job,
+        (status) => {
+          this.change(job.id, { status });
+        },
+        (spent) => {
+          this.change(job.id, { credits: spent });
+        },
+      );
       this.change(job.id, {
         status: "done",
         results,

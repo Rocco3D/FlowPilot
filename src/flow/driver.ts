@@ -19,6 +19,8 @@ export interface FlowDriver {
   run(
     job: Job,
     onProgress?: (status: JobStatus) => void,
+    /** Called right after the generation is submitted, with the credits actually spent. */
+    onSpend?: (credits: number) => void,
   ): Promise<{ results: JobResult[]; credits: number }>;
   /** Releases the browser connection; with `closeBrowser` also quits the automation Chrome. */
   close(options?: { closeBrowser?: boolean }): Promise<void>;

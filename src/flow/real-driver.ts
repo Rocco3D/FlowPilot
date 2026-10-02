@@ -1,6 +1,7 @@
 import type { Page } from "playwright-core";
 import { BrowserSession } from "../browser/session.js";
 import { loadConfig } from "../core/config.js";
+import { FlowPilotError } from "../core/errors.js";
 import { checkSpend, recordSpend } from "../core/credits.js";
 import { createLogger } from "../core/logger.js";
 import type {
@@ -12,6 +13,7 @@ import type {
   SessionStatus,
 } from "../core/schemas.js";
 import { t } from "../i18n/index.js";
+import { clearComposer } from "./cleanup.js";
 import { downloadResult, writeSummary } from "./download.js";
 import type { FlowDriver } from "./driver.js";
 import { discoverModels } from "./models.js";
@@ -35,11 +37,17 @@ export class RealFlowDriver implements FlowDriver {
   ) {}
 
   async doctor(): Promise<SessionStatus> {
-    const status = await this.session.status();
-    if (!status.connected) return status;
-    const page = await this.session.page();
-    if (!page.url().includes("flow.google.com")) await openHome(page);
+    // Open the session like jobs do (launch or attach), so the sign-in check is real.
+    let page: Page;
+    try {
+      page = await this.session.page();
+    } catch (error) {
+      if (!(error instanceof FlowPilotError)) throw error;
+      return { ...(await this.session.status()), signedIn: false, message: error.message };
+    }
+    await openHome(page);
     const signedIn = await isSignedIn(page);
+    const status = await this.session.status();
     return {
       ...status,
       signedIn,
@@ -63,6 +71,7 @@ export class RealFlowDriver implements FlowDriver {
   async run(
     job: Job,
     onProgress?: (status: JobStatus) => void,
+    onSpend?: (credits: number) => void,
   ): Promise<{ results: JobResult[]; credits: number }> {
     const request = job.request;
     const references = planReferences(request);
@@ -71,6 +80,7 @@ export class RealFlowDriver implements FlowDriver {
     const page = await this.session.page();
     await this.openProjectFor(page, request.project);
     await ensureClassicComposer(page);
+    await clearComposer(page);
 
     const { cost, model } = await applySettings(page, request);
     checkSpend(cost, {
@@ -86,28 +96,39 @@ export class RealFlowDriver implements FlowDriver {
     await fillPrompt(page, request.prompt);
     const before = await snapshotResults(page, request.type);
     await submitGeneration(page);
-    const items = await waitForResults(page, request.type, before, request.outputs);
-
-    onProgress?.("downloading");
-    const outDir = request.outDir ?? config.outputDir;
-    const results: JobResult[] = [];
-    for (const [i, item] of items.entries()) {
-      const file = await downloadResult(page, item, {
-        type: request.type,
-        upscale: request.upscale,
-        outDir,
-        jobId: job.id,
-        n: i + 1,
-      });
-      writeSummary(file.path, { jobId: job.id, request, model, cost, flowUrl: page.url() });
-      results.push({
-        path: file.path,
-        type: request.type,
-        ...(file.mediaId ? { mediaId: file.mediaId } : {}),
-      });
-    }
     recordSpend({ jobId: job.id, model, credits: cost, at: new Date().toISOString() });
-    return { results, credits: cost };
+    onSpend?.(cost);
+    const projectUrl = page.url();
+    try {
+      const items = await waitForResults(page, request.type, before, request.outputs);
+
+      onProgress?.("downloading");
+      const outDir = request.outDir ?? config.outputDir;
+      const results: JobResult[] = [];
+      for (const [i, item] of items.entries()) {
+        const file = await downloadResult(page, item, {
+          type: request.type,
+          upscale: request.upscale,
+          outDir,
+          jobId: job.id,
+          n: i + 1,
+        });
+        writeSummary(file.path, { jobId: job.id, request, model, cost, flowUrl: projectUrl });
+        results.push({
+          path: file.path,
+          type: request.type,
+          ...(file.mediaId ? { mediaId: file.mediaId } : {}),
+        });
+      }
+      return { results, credits: cost };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new FlowPilotError(
+        error instanceof FlowPilotError ? error.code : "post_submit_failed",
+        "flow.gen.failedAfterSubmit",
+        { reason, url: projectUrl },
+      );
+    }
   }
 
   async close(options: { closeBrowser?: boolean } = {}): Promise<void> {

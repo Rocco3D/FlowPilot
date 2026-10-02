@@ -8,11 +8,26 @@ import {
   FLOW_IMAGE_RE,
   LEGACY_MEDIA_RE,
   LEGACY_NAME_RE,
+  MIN_RESULT_IMAGE_WIDTH,
+  RESULT_IMAGE_HOST_RE,
 } from "./selectors.js";
 
 export interface ResultItem {
   src: string;
   id: string;
+  /** Position among the page's flow-video-tile elements when detected (videos only). */
+  tileIndex?: number;
+}
+
+/** What the page tells about one `img` element. */
+export interface ImgInfo {
+  src: string;
+  inVideoTile: boolean;
+  inPromptBox: boolean;
+  /** Class "thumbnail" or an alt text mentioning a thumbnail. */
+  thumbnail: boolean;
+  width: number;
+  tileIndex: number;
 }
 
 export interface ResultsSnapshot {
@@ -23,17 +38,28 @@ export interface ResultsSnapshot {
 const POLL_MS = 1500;
 const DEFAULT_TIMEOUT_MS = { video: 30 * 60_000, image: 15 * 60_000 } as const;
 
-const idFromSrc = (src: string) =>
-  FLOW_IMAGE_RE.exec(src)?.[1] ?? LEGACY_NAME_RE.exec(src)?.[1] ?? src;
+/** Short stable hash (djb2) for srcs that carry no media id. */
+function hashSrc(src: string): string {
+  let h = 5381;
+  for (let i = 0; i < src.length; i += 1) h = ((h << 5) + h + src.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
+
+/** Media id from `/image/<id>` or `?name=<id>` when present, else a stable hash of the src. */
+export const idFromSrc = (src: string) =>
+  FLOW_IMAGE_RE.exec(src)?.[1] ?? LEGACY_NAME_RE.exec(src)?.[1] ?? hashSrc(src);
 
 /**
- * Tells which kind of result an `img` src is. A finished video is the thumbnail inside a
- * `flow-video-tile`; an image is a Flow image outside any tile (legacy redirect URLs
- * without a thumbnail marker also count).
+ * Tells which kind of result an `img` is, by structure. A finished video is the thumbnail inside
+ * a `flow-video-tile`; an image is a large http(s) image of a Flow host (or a legacy redirect URL
+ * without a thumbnail marker) outside the prompt box and outside any tile.
  */
-export function classifyResultSrc(src: string, inVideoTile: boolean): JobType | undefined {
-  if (inVideoTile) return FLOW_IMAGE_RE.test(src) ? "video" : undefined;
-  if (FLOW_IMAGE_RE.test(src)) return "image";
+export function classifyResultImg(img: ImgInfo): JobType | undefined {
+  const { src } = img;
+  if (!/^https?:\/\//i.test(src) || img.inPromptBox) return undefined;
+  if (img.inVideoTile) return img.thumbnail || FLOW_IMAGE_RE.test(src) ? "video" : undefined;
+  if (img.width < MIN_RESULT_IMAGE_WIDTH) return undefined;
+  if (RESULT_IMAGE_HOST_RE.test(src)) return "image";
   if (LEGACY_MEDIA_RE.test(src) && !/mediaUrlType=/.test(src)) return "image";
   return undefined;
 }
@@ -45,20 +71,28 @@ export function classifyFailure(text: string): { code: string; key: string } | u
 }
 
 async function readResults(page: Page, type: JobType): Promise<ResultItem[]> {
-  const imgs = await page.evaluate(() =>
-    [...document.querySelectorAll("img")].map((img) => ({
-      src: img.src,
-      inTile: img.closest("flow-video-tile") !== null,
-    })),
-  );
+  const imgs = await page.evaluate((): ImgInfo[] => {
+    const tiles = [...document.querySelectorAll("flow-video-tile")];
+    return [...document.querySelectorAll("img")].map((img) => {
+      const tile = img.closest("flow-video-tile");
+      return {
+        src: img.src,
+        inVideoTile: tile !== null,
+        inPromptBox: img.closest("flow-prompt-box") !== null,
+        thumbnail: img.classList.contains("thumbnail") || /thumbnail/i.test(img.alt),
+        width: img.getBoundingClientRect().width,
+        tileIndex: tile ? tiles.indexOf(tile) : -1,
+      };
+    });
+  });
   const seen = new Set<string>();
   const items: ResultItem[] = [];
-  for (const { src, inTile } of imgs) {
-    if (classifyResultSrc(src, inTile) !== type) continue;
-    const id = idFromSrc(src);
+  for (const img of imgs) {
+    if (classifyResultImg(img) !== type) continue;
+    const id = idFromSrc(img.src);
     if (!seen.has(id)) {
       seen.add(id);
-      items.push({ src, id });
+      items.push({ src: img.src, id, ...(img.tileIndex >= 0 ? { tileIndex: img.tileIndex } : {}) });
     }
   }
   return items;
@@ -91,7 +125,8 @@ const readFailure = async (page: Page) =>
           let card: Element | null = el;
           let hasResult = false;
           for (let i = 0; i < 3 && card && !hasResult; i += 1, card = card.parentElement) {
-            hasResult = card.querySelector('img[src*="flow-content.google"]') !== null;
+            hasResult =
+              card.querySelector('img[src*="flow-content.google"], flow-video-tile') !== null;
           }
           chunks.push({
             text,

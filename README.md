@@ -1,8 +1,8 @@
 <p align="center"><img src="assets/brand/banner.png" alt="FlowPilot" width="100%"></p>
 
-# FlowPilot
+<p align="center"><b>English</b> &nbsp;|&nbsp; <a href="README.it.md">Italiano</a></p>
 
-[Leggi in italiano](README.it.md)
+# FlowPilot
 
 FlowPilot is a local service that drives Google Flow (AI image and video generation) through your own logged-in Chrome, using your own Flow subscription credits. It is usable from a CLI (`flowpilot`), a local HTTP API (127.0.0.1 only, protected by a token) and an MCP server for AI assistants (Claude Code, Codex, Cursor and others).
 
@@ -18,7 +18,13 @@ FlowPilot is a local service that drives Google Flow (AI image and video generat
 
 ## Install
 
-FlowPilot is installed from source for now. The npm package is coming.
+FlowPilot is not on npm yet. Install it from GitHub with one command (the repository may be private: you then need GitHub access, for example a signed-in `gh` or a token):
+
+```bash
+npm install -g github:Rocco3D/FlowPilot
+```
+
+Or install from source:
 
 ```bash
 git clone https://github.com/anthropics/flowpilot.git

@@ -20,6 +20,8 @@ export default {
   "gen.noneOffered": "none",
   "gen.agentModeOn": "Flow's Agent mode is on and could not be turned off.",
   "gen.creditsUnreadable": "Could not read the credit cost from Flow.",
+  "gen.referencesNotCleared":
+    "Could not remove the references left in the prompt area by a previous job.",
   "gen.promptNotSet": "The prompt box is empty after typing the prompt.",
   "gen.submitNotReady": "The Start generation button did not become enabled.",
   "gen.timeout": "Flow did not finish the generation in {minutes} minutes.",
@@ -27,10 +29,14 @@ export default {
   "gen.creditsExhausted": "Flow reports that the account is out of credits.",
   "gen.blocked": "Flow refused the prompt (content policy).",
   "gen.failed": "Flow reported that the generation failed.",
+  "gen.failedAfterSubmit":
+    "{reason} The generation was submitted and credits were spent; it exists in Flow: {url}",
   "refs.fileNotFound": "Input file not found: {path}.",
   "refs.framesVideoOnly": "Start and end frames are only available for video.",
   "refs.framesExclusive": "Frames cannot be combined with ingredients or characters.",
   "refs.dialogNotOpen": "The Flow add media dialog did not open.",
+  "refs.framePanelNotOpen": "The Flow frame picker did not open or did not close.",
+  "refs.frameNotFilled": "The {slot} frame slot is still empty after selecting the image.",
   "refs.uploadFailed": "Flow did not accept the uploaded file {path}.",
   "refs.characterNotFound": "No saved Flow character is named {name}.",
   "refs.notAttached": "Expected {expected} new references in the prompt area but found {found}.",

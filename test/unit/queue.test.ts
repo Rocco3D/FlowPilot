@@ -65,6 +65,18 @@ describe("JobQueue", () => {
     expect(new JobStore(dir).get(job.id)).toEqual(done);
   });
 
+  it("keeps the credits reported at submit when the job fails afterwards", async () => {
+    const driver: FlowDriver = Object.create(new FakeDriver()) as FlowDriver;
+    driver.run = (_job, _progress, onSpend) => {
+      onSpend?.(20);
+      return Promise.reject(new FlowPilotError("download_no_source", "flow.download.noSource"));
+    };
+    const queue = new JobQueue(driver, new JobStore(dir));
+    const done = await queue.waitFor(queue.enqueue(req).id);
+    expect(done.status).toBe("failed");
+    expect(done.credits).toBe(20);
+  });
+
   it("marks a failed job and continues with the next one", async () => {
     const ok = new FakeDriver();
     const failing = new FakeDriver({ fail: true });

@@ -25,6 +25,10 @@ export const OUTPUT_CHIP_RE = /^x[1-4]$/;
 export const RESOLUTION_CHIP_RE = /^\d{3,4}p$/;
 export const DURATION_CHIP_RE = /^\d+s$/;
 export const FLOW_IMAGE_RE = /flow-content\.google\/image\/([0-9a-f-]+)/i;
+/** Media hosts of result images; video thumbnails are recognised by structure, not by host. */
+export const RESULT_IMAGE_HOST_RE = /^https?:\/\/(flow-content\.google|flow\.google\.com)\//i;
+/** Result images are large; avatars and icons are smaller than this (rendered width, px). */
+export const MIN_RESULT_IMAGE_WIDTH = 120;
 export const LEGACY_MEDIA_RE = /media\.getMediaUrlRedirect/;
 export const LEGACY_NAME_RE = /[?&]name=([0-9a-f-]+)/i;
 export const EDIT_PATH_RE = /\/edit\/([0-9a-f-]+)/i;
@@ -153,6 +157,15 @@ export const selectors = {
     describe: 'Prompt area button with aria-label "Add ingredients to the prompt box"',
     locate: (page) => page.locator('button[aria-label="Add ingredients to the prompt box"]'),
   },
+  ingredientChips: {
+    describe: 'Attached reference buttons named "...ingredient" inside flow-prompt-box',
+    locate: (page) => page.locator("flow-prompt-box").getByRole("button", { name: /ingredient$/i }),
+  },
+  clearPromptButton: {
+    describe: 'Prompt area button named "Clear prompt"',
+    locate: (page) =>
+      page.locator("flow-prompt-box").getByRole("button", { name: "Clear prompt", exact: true }),
+  },
   mediaDialog: {
     describe: 'Dialog "Add assets to the project" (accessible name matches /add assets/i)',
     locate: (page) => dialogOf(page),
@@ -241,9 +254,27 @@ export const resultImage = (page: Page, src: string) =>
 /** Video sub-mode chips in the settings popover. */
 export const subModeChip = (page: Page, mode: "frames" | "ingredients") =>
   chip(page, mode === "frames" ? /Frames$/ : /Ingredients$/);
-/** Empty frame slot of the prompt area; a filled slot no longer shows its label. */
+/** Frame slot button of the prompt area; a filled slot no longer has the plain "Start"/"End" name. */
 export const frameSlot = (page: Page, slot: "Start" | "End") =>
-  page.getByText(slot, { exact: true });
+  page.locator("flow-prompt-box").getByRole("button", { name: slot, exact: true });
+const panelOf = (page: Page) => page.locator("div.add-menu-popover-container");
+/** Frame picker panel opened by a frame slot ("Select a frame image"). */
+export const framePanel = (page: Page) => panelOf(page).first();
+export const framePanelSearch = (page: Page) =>
+  panelOf(page).getByRole("textbox", { name: /search assets/i });
+export const framePanelTab = (page: Page, name: "Images" | "Uploads") =>
+  panelOf(page).locator('mat-list-item[role="tab"]').filter({ hasText: name });
+export const framePanelUpload = (page: Page) =>
+  panelOf(page).getByRole("button", { name: /upload media/i });
+export const framePanelConfirm = (page: Page) =>
+  panelOf(page).getByRole("button", { name: /add to prompt/i });
+export const framePanelClose = (page: Page) =>
+  panelOf(page).getByRole("button", { name: "Close", exact: true });
+/** Asset option of the frame picker whose name starts with an uploaded file's base name. */
+export const framePanelAsset = (page: Page, basename: string) =>
+  panelOf(page).getByRole("option", {
+    name: new RegExp(`^${basename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+  });
 /** Asset option in the add assets dialog whose name starts with the exact title. */
 export const assetOption = (page: Page, name: string) =>
   dialogOf(page).getByRole("option").filter({ hasText: name });
