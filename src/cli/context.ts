@@ -5,6 +5,8 @@ import { ensureServiceRunning } from "./service-control.js";
 export interface Ctx {
   /** Delay between job status polls, in milliseconds. */
   pollMs: number;
+  /** Opens the plain Chrome sign-in window and returns the profile directory (injectable for tests). */
+  openLogin?: (profile?: string) => Promise<string>;
 }
 
 export interface JsonOpt {

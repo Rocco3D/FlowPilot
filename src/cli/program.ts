@@ -6,6 +6,7 @@ import { registerConfig } from "./commands/config.js";
 import { registerGenerate } from "./commands/generate.js";
 import { registerInfo } from "./commands/info.js";
 import { registerJobs } from "./commands/jobs.js";
+import { registerLogin } from "./commands/login.js";
 import { registerService } from "./commands/service.js";
 import { startMcpServer } from "../server/mcp.js";
 import type { Ctx } from "./context.js";
@@ -25,6 +26,7 @@ export function buildProgram(ctx: Ctx = { pollMs: 2000 }): Command {
   registerJobs(program);
   registerConfig(program);
   registerService(program);
+  registerLogin(program, ctx);
   program
     .command("mcp")
     .description(t("cli.mcp.description"))
