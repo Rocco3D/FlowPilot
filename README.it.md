@@ -73,13 +73,13 @@ flowpilot video --prompt-file prompt.md --model "Veo 3.1 - Lite"
 ### Omni (generazione universale)
 
 ```bash
-flowpilot video --prompt "Una cascata che scorre" --model "Omni 1.1 Flash" --resolution 360p --duration 4
+flowpilot video --prompt "Una cascata che scorre" --model "Omni 1.1 Flash" --resolution 720p --duration 4
 ```
 
 ### Opzioni avanzate
 
 - `--ratio 16:9`: Proporzioni (immagini e video; il default dipende dal modello)
-- `--resolution 360p`: Risoluzione Omni (360p, 720p, ecc.)
+- `--resolution 720p`: risoluzione di Omni, quando Flow offre una scelta (per esempio 360p o 720p)
 - `--duration 4`: Durata del video in secondi
 - `--outputs 2`: Genera più output (1–4)
 - `--start-frame path.jpg`: Frame iniziale per il continuo del video
@@ -97,7 +97,7 @@ I modelli e i loro costi in crediti a ottobre 2026:
 
 **Modelli video:**
 
-- **Omni 1.1 Flash**: 360p (4–15 crediti), 720p (4–15 crediti), durate 4/6/8/10 secondi
+- **Omni 1.1 Flash**: 720p, durate 4/6/8/10 secondi, 7–15 crediti (a volte Flow offre anche 360p, 4–7 crediti; con primo/ultimo fotogramma solo 720p e 4/6/8 secondi)
 - **Veo 3.1 - Lite**: 720p, 8 secondi, 10 crediti
 - **Veo 3.1 - Fast**: 720p, 8 secondi, 20 crediti
 - **Veo 3.1 - Quality**: 720p, 8 secondi, 100 crediti

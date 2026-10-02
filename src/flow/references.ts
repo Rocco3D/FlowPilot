@@ -17,9 +17,7 @@ import {
   framePanelTab,
   framePanelUpload,
   selectors,
-  subModeChip,
 } from "./selectors.js";
-import { openSettings } from "./settings-read.js";
 
 type Slot = "Start" | "End";
 type RefInput = Pick<JobRequest, "type" | "startFrame" | "endFrame" | "ingredients" | "characters">;
@@ -164,13 +162,6 @@ async function uploadAndConfirm(
   });
 }
 
-async function chooseSubMode(page: Page, mode: "frames" | "ingredients"): Promise<void> {
-  await openSettings(page);
-  await clickRobust(subModeChip(page, mode));
-  await page.waitForTimeout(400);
-  await dismissOverlays(page);
-}
-
 /** Fills a frame slot; returns false when the slot is already filled (its label is gone). */
 async function fillFrame(
   page: Page,
@@ -304,8 +295,8 @@ export async function attachReferences(
   plan: ReferencePlan,
   opts: UploadOptions,
 ): Promise<void> {
-  if (!plan.subMode && expectedNewReferences(plan) === 0) return;
-  if (plan.subMode) await chooseSubMode(page, plan.subMode);
+  // The Frames/Ingredients input mode is chosen by applySettings, before resolution and duration.
+  if (expectedNewReferences(plan) === 0) return;
   const before = await countAttached(page);
   const skipped: Slot[] = [];
   for (const { slot, file } of plan.frames) {

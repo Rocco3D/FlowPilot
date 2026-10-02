@@ -11,6 +11,7 @@ import {
   ratioChip,
   resolutionChips,
   selectors,
+  subModeChip,
 } from "./selectors.js";
 import {
   openModelMenu,
@@ -94,6 +95,29 @@ async function visibleTexts(chips: Locator): Promise<string[]> {
   return [...new Set(texts.map((s) => s.trim()))];
 }
 
+const isChecked = async (target: Locator) =>
+  (await target.getAttribute("aria-checked").catch(() => null)) === "true" ||
+  (await target.getAttribute("aria-pressed").catch(() => null)) === "true";
+
+/**
+ * Turns the video "Frames" input mode on or off. Flow shows either a Frames/Ingredients pair of
+ * radios or a single Frames toggle (verified live); both are handled.
+ */
+async function setFramesMode(page: Page, on: boolean): Promise<void> {
+  const frames = subModeChip(page, "frames").first();
+  if (!(await usable(frames))) {
+    if (on) throw optionNotAvailable("input mode", "frames", []);
+    return;
+  }
+  if ((await isChecked(frames)) === on) return;
+  const ingredients = subModeChip(page, "ingredients").first();
+  await clickRobust(!on && (await usable(ingredients)) ? ingredients : frames);
+  await page.waitForTimeout(400);
+  if ((await isChecked(frames)) !== on) {
+    throw optionNotAvailable("input mode", on ? "frames" : "ingredients", []);
+  }
+}
+
 /** Clicks `target` if it is present and enabled; otherwise throws `option_not_available`. */
 async function pick(
   page: Page,
@@ -166,6 +190,9 @@ export async function applySettings(
     modeButton(page, request.type),
     selectors.modeButtons.locate(page),
   );
+  // Frames on/off changes which resolutions/durations Flow offers: set it first.
+  if (request.type === "video")
+    await setFramesMode(page, Boolean(request.startFrame || request.endFrame));
   if (request.model) await chooseModel(page, request.model);
   if (request.ratio) {
     const ratios = Object.keys(RATIO_ICON);

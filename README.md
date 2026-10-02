@@ -73,13 +73,13 @@ flowpilot video --prompt-file prompt.md --model "Veo 3.1 - Lite"
 ### Omni (universal generation)
 
 ```bash
-flowpilot video --prompt "A flowing waterfall" --model "Omni 1.1 Flash" --resolution 360p --duration 4
+flowpilot video --prompt "A flowing waterfall" --model "Omni 1.1 Flash" --resolution 720p --duration 4
 ```
 
 ### Advanced options
 
 - `--ratio 16:9`: Aspect ratio (image and video; default is model-dependent)
-- `--resolution 360p`: Omni resolution (360p, 720p, etc.)
+- `--resolution 720p`: Omni resolution, when Flow offers a choice (for example 360p or 720p)
 - `--duration 4`: Video duration in seconds
 - `--outputs 2`: Generate multiple outputs (1–4)
 - `--start-frame path.jpg`: Starting frame for video continuation
@@ -97,7 +97,7 @@ Models and their credit costs as of October 2026:
 
 **Video models:**
 
-- **Omni 1.1 Flash**: 360p (4–15 credits), 720p (4–15 credits), durations 4/6/8/10 seconds
+- **Omni 1.1 Flash**: 720p, durations 4/6/8/10 seconds, 7–15 credits (Flow sometimes also offers 360p, 4–7 credits; with a start/end frame only 720p and 4/6/8 seconds)
 - **Veo 3.1 - Lite**: 720p, 8 seconds, 10 credits
 - **Veo 3.1 - Fast**: 720p, 8 seconds, 20 credits
 - **Veo 3.1 - Quality**: 720p, 8 seconds, 100 credits
