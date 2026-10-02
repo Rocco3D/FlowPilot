@@ -70,6 +70,7 @@ export default {
   "config.setDescription": "Change a configuration value",
   "config.keyArgument": "Configuration key",
   "config.valueArgument": "New value",
+  "mcp.description": "Start the MCP server over stdio for AI assistants",
   "service.description": "Manage the local FlowPilot service",
   "service.startDescription": "Start the service",
   "service.stopDescription": "Stop the service",

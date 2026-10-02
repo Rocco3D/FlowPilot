@@ -7,6 +7,7 @@ import { registerGenerate } from "./commands/generate.js";
 import { registerInfo } from "./commands/info.js";
 import { registerJobs } from "./commands/jobs.js";
 import { registerService } from "./commands/service.js";
+import { startMcpServer } from "../server/mcp.js";
 import type { Ctx } from "./context.js";
 
 const { version } = createRequire(import.meta.url)("../../package.json") as { version: string };
@@ -24,6 +25,12 @@ export function buildProgram(ctx: Ctx = { pollMs: 2000 }): Command {
   registerJobs(program);
   registerConfig(program);
   registerService(program);
+  program
+    .command("mcp")
+    .description(t("cli.mcp.description"))
+    .action(async (_opts: unknown, cmd: Command) => {
+      await startMcpServer(cmd.optsWithGlobals<{ port?: number }>().port);
+    });
   return program;
 }
 
