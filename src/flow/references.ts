@@ -1,10 +1,11 @@
 import fs from "node:fs";
+import path from "node:path";
 import type { Locator, Page } from "playwright-core";
 import { FlowPilotError } from "../core/errors.js";
 import type { Logger } from "../core/logger.js";
 import type { JobRequest } from "../core/schemas.js";
 import { clickRobust, dismissOverlays } from "./overlays.js";
-import { assetOption, frameSlot, selectors, subModeChip } from "./selectors.js";
+import { assetForFile, assetOption, frameSlot, selectors, subModeChip } from "./selectors.js";
 import { openSettings } from "./settings-read.js";
 
 type Slot = "Start" | "End";
@@ -117,21 +118,34 @@ async function answerRights(page: Page, file: string, opts: UploadOptions): Prom
   opts.log?.info(`accepted Flow upload rights dialog for ${file}`);
 }
 
-/** Uploads a file in the open dialog; Flow selects or attaches it by itself. */
+/**
+ * Attaches a file through the open dialog: reuses the project asset with the same base name, else
+ * uploads it. Flow may attach the upload and close the dialog by itself; otherwise the asset is
+ * clicked. The dialog is closed at the end.
+ */
 async function uploadAndConfirm(
   page: Page,
   d: Locator,
   file: string,
   opts: UploadOptions,
 ): Promise<void> {
-  const [chooser] = await Promise.all([
-    page.waitForEvent("filechooser", { timeout: 15_000 }),
-    clickRobust(selectors.mediaDialogUpload.locate(page)),
-  ]);
-  await chooser.setFiles(file);
-  await answerRights(page, file, opts);
-  // Flow attaches the upload by itself and closes the dialog a few seconds later.
-  await d.waitFor({ state: "hidden", timeout: 20_000 }).catch(async () => {
+  const asset = assetForFile(page, path.parse(file).name).first();
+  if (!(await asset.isVisible().catch(() => false))) {
+    const [chooser] = await Promise.all([
+      page.waitForEvent("filechooser", { timeout: 15_000 }),
+      clickRobust(selectors.mediaDialogUpload.locate(page)),
+    ]);
+    await chooser.setFiles(file);
+    await answerRights(page, file, opts);
+  }
+  for (let i = 0; i < 60 && (await d.isVisible().catch(() => false)); i += 1) {
+    if (await asset.isVisible().catch(() => false)) {
+      await clickRobust(asset);
+      break;
+    }
+    await page.waitForTimeout(500);
+  }
+  await d.waitFor({ state: "hidden", timeout: 8000 }).catch(async () => {
     await clickRobust(selectors.mediaDialogClose.locate(page)).catch(() => undefined);
     await d.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
   });

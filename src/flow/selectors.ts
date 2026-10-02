@@ -64,14 +64,6 @@ export const SETTINGS_TRIGGER_LABEL = "Settings trigger";
 
 const dialogOf = (page: Page) => page.getByRole("dialog", { name: /add assets/i });
 
-/** Nearest ancestor of the prompt box that also holds the settings trigger. */
-const composerOf = (page: Page) =>
-  page
-    .locator("div")
-    .filter({ has: page.locator('div.ProseMirror[contenteditable="true"]') })
-    .filter({ has: page.locator(`button[aria-label="${SETTINGS_TRIGGER_LABEL}"]`) })
-    .last();
-
 const chip = (page: Page, text: RegExp) =>
   page.locator("button, [role=radio]").filter({ hasText: text });
 
@@ -212,9 +204,8 @@ export const selectors = {
       page.getByRole("dialog", { name: /rights to use/i }).getByRole("button", { name: /cancel/i }),
   },
   attachedReferences: {
-    describe: "Flow images attached as references in the prompt composer (excludes result tiles)",
-    locate: (page) =>
-      composerOf(page).locator('img[src*="flow-content.google/image/"]:not(flow-video-tile img)'),
+    describe: "Flow images attached as references in the custom element flow-prompt-box",
+    locate: (page) => page.locator('flow-prompt-box img[src*="flow-content.google/image/"]'),
   },
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
@@ -247,3 +238,8 @@ export const frameSlot = (page: Page, slot: "Start" | "End") =>
 /** Asset option in the add assets dialog whose name starts with the exact title. */
 export const assetOption = (page: Page, name: string) =>
   dialogOf(page).getByRole("option").filter({ hasText: name });
+/** Asset option of the add assets dialog whose name starts with an uploaded file's base name. */
+export const assetForFile = (page: Page, basename: string) =>
+  dialogOf(page).getByRole("option", {
+    name: new RegExp(`^${basename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+  });
