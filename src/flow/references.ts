@@ -130,16 +130,10 @@ async function uploadAndConfirm(
   ]);
   await chooser.setFiles(file);
   await answerRights(page, file, opts);
-  await Promise.race([
-    selectors.mediaDialogSelected
-      .locate(page)
-      .first()
-      .waitFor({ state: "visible", timeout: 30_000 }),
-    d.waitFor({ state: "hidden", timeout: 30_000 }),
-  ]).catch(() => undefined);
-  await finishDialog(page, d).catch(async () => {
-    await dismissOverlays(page);
-    throw new FlowPilotError("references_not_attached", "flow.refs.uploadFailed", { path: file });
+  // Flow attaches the upload by itself and closes the dialog a few seconds later.
+  await d.waitFor({ state: "hidden", timeout: 20_000 }).catch(async () => {
+    await clickRobust(selectors.mediaDialogClose.locate(page)).catch(() => undefined);
+    await d.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
   });
 }
 
@@ -197,15 +191,6 @@ async function addCharacter(page: Page, name: string): Promise<void> {
   await finishDialog(page, d);
 }
 
-/** Counts thumbnails in the prompt area: images, or elements with a background image. */
-const countThumbnails = (page: Page) =>
-  selectors.promptArea.locate(page).evaluate((el) => {
-    const bg = [...el.querySelectorAll("*")].filter(
-      (e) => getComputedStyle(e).backgroundImage !== "none",
-    );
-    return el.querySelectorAll("img").length + bg.length;
-  });
-
 const countAttached = (page: Page) => selectors.attachedReferences.locate(page).count();
 
 /**
@@ -220,7 +205,6 @@ export async function attachReferences(
   if (!plan.subMode && expectedNewReferences(plan) === 0) return;
   if (plan.subMode) await chooseSubMode(page, plan.subMode);
   const before = await countAttached(page);
-  const thumbsBefore = await countThumbnails(page).catch(() => 0);
   const skipped: Slot[] = [];
   for (const { slot, file } of plan.frames) {
     if (!(await fillFrame(page, slot, file, opts))) skipped.push(slot);
@@ -231,13 +215,12 @@ export async function attachReferences(
   for (const name of plan.characters) await addCharacter(page, name);
 
   const expected = expectedNewReferences(plan, skipped);
-  await page.waitForTimeout(1000);
-  const after = await countAttached(page);
-  const found = after - before;
-  // Fallback when the image selector sees nothing at all: any new thumbnail counts.
-  const thumbsFound =
-    before === 0 && after === 0 ? (await countThumbnails(page).catch(() => 0)) - thumbsBefore : 0;
-  if (found < expected && thumbsFound < expected) {
+  let found = 0;
+  for (let i = 0; i < 30 && found < expected; i += 1) {
+    found = (await countAttached(page)) - before;
+    if (found < expected) await page.waitForTimeout(500);
+  }
+  if (found < expected) {
     throw new FlowPilotError("references_not_attached", "flow.refs.notAttached", {
       expected,
       found,

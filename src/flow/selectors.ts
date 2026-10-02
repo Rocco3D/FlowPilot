@@ -64,11 +64,12 @@ export const SETTINGS_TRIGGER_LABEL = "Settings trigger";
 
 const dialogOf = (page: Page) => page.getByRole("dialog", { name: /add assets/i });
 
-const promptAreaOf = (page: Page) =>
+/** Nearest ancestor of the prompt box that also holds the settings trigger. */
+const composerOf = (page: Page) =>
   page
     .locator("div")
     .filter({ has: page.locator('div.ProseMirror[contenteditable="true"]') })
-    .filter({ has: page.getByRole("button", { name: "Start generation", exact: true }) })
+    .filter({ has: page.locator(`button[aria-label="${SETTINGS_TRIGGER_LABEL}"]`) })
     .last();
 
 const chip = (page: Page, text: RegExp) =>
@@ -210,13 +211,10 @@ export const selectors = {
     locate: (page) =>
       page.getByRole("dialog", { name: /rights to use/i }).getByRole("button", { name: /cancel/i }),
   },
-  promptArea: {
-    describe: "Smallest container holding the prompt box and the submit button",
-    locate: (page) => promptAreaOf(page),
-  },
   attachedReferences: {
-    describe: "Images of attached references inside the prompt area",
-    locate: (page) => promptAreaOf(page).locator("img"),
+    describe: "Flow images attached as references in the prompt composer (excludes result tiles)",
+    locate: (page) =>
+      composerOf(page).locator('img[src*="flow-content.google/image/"]:not(flow-video-tile img)'),
   },
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
