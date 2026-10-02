@@ -24,6 +24,35 @@ export const PROJECT_PATH_RE = /\/project\/([0-9a-f-]+)/i;
 export const OUTPUT_CHIP_RE = /^x[1-4]$/;
 export const RESOLUTION_CHIP_RE = /^\d{3,4}p$/;
 export const DURATION_CHIP_RE = /^\d+s$/;
+export const FLOW_IMAGE_RE = /flow-content\.google\/image\/([0-9a-f-]+)/i;
+export const LEGACY_MEDIA_RE = /media\.getMediaUrlRedirect/;
+export const LEGACY_NAME_RE = /[?&]name=([0-9a-f-]+)/i;
+export const EDIT_PATH_RE = /\/edit\/([0-9a-f-]+)/i;
+export const GATED_TIER_RE = /upgrade/i;
+
+/** Failure banner text -> error code and i18n key, checked in order. */
+export const FAILURE_PATTERNS: { code: string; key: string; re: RegExp }[] = [
+  { code: "rate_limited", key: "flow.gen.rateLimited", re: /unusual activity|rate limit/i },
+  {
+    code: "credits_exhausted",
+    key: "flow.gen.creditsExhausted",
+    re: /run out of credits|insufficient credits/i,
+  },
+  {
+    code: "generation_blocked",
+    key: "flow.gen.blocked",
+    re: /violates|content policy|can.?t help with/i,
+  },
+  {
+    code: "generation_failed",
+    key: "flow.gen.failed",
+    re: /generation failed|couldn.?t generate|something went wrong/i,
+  },
+];
+
+/** Download tier patterns: default original, then 1080p/2K and 4K upscales. */
+export const TIER_RE = { original: /original/i, "1080p": /2K|1080p/i, "4k": /4K/i } as const;
+
 export const SETTINGS_TRIGGER_LABEL = "Settings trigger";
 
 const chip = (page: Page, text: RegExp) =>
@@ -94,6 +123,14 @@ export const selectors = {
         "[data-radix-popper-content-wrapper]:visible, [data-radix-menu-content][data-state=open]:visible",
       ),
   },
+  moreOptionsButton: {
+    describe: 'Viewer button "More options"',
+    locate: (page) => page.getByRole("button", { name: "More options", exact: true }),
+  },
+  downloadMediaItem: {
+    describe: 'Menu item "Download media"',
+    locate: (page) => page.locator("[role=menuitem]").filter({ hasText: /download media/i }),
+  },
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
     locate: (page) => page.locator(".cdk-overlay-backdrop-showing"),
@@ -110,3 +147,8 @@ export const ratioChip = (page: Page, ratio: string) =>
 export const resolutionChips = (page: Page) => chip(page, RESOLUTION_CHIP_RE);
 export const durationChips = (page: Page) => chip(page, DURATION_CHIP_RE);
 export const outputChip = (page: Page, n: number) => chip(page, new RegExp(`^x${n}$`));
+
+export const tierItem = (page: Page, tier: RegExp) =>
+  page.locator("[role=menuitem]").filter({ hasText: tier });
+export const resultImage = (page: Page, src: string) =>
+  page.locator(`img[src=${JSON.stringify(src)}]`);

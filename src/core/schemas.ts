@@ -19,6 +19,8 @@ export const JobRequest = z.object({
   outDir: z.string().optional(),
   upscale: z.enum(["1080p", "4k"]).optional(),
   maxCredits: z.number().int().min(0).optional(),
+  /** Overrides the credit limits for this job. */
+  confirm: z.boolean().optional(),
 });
 export type JobRequest = z.infer<typeof JobRequest>;
 
