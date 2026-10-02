@@ -62,6 +62,15 @@ export const TIER_RE = { original: /original/i, "1080p": /2K|1080p/i, "4k": /4K/
 
 export const SETTINGS_TRIGGER_LABEL = "Settings trigger";
 
+const dialogOf = (page: Page) => page.getByRole("dialog", { name: /add assets/i });
+
+const promptAreaOf = (page: Page) =>
+  page
+    .locator("div")
+    .filter({ has: page.locator('div.ProseMirror[contenteditable="true"]') })
+    .filter({ has: page.getByRole("button", { name: "Start generation", exact: true }) })
+    .last();
+
 const chip = (page: Page, text: RegExp) =>
   page.locator("button, [role=radio]").filter({ hasText: text });
 
@@ -143,59 +152,55 @@ export const selectors = {
     locate: (page) => page.locator('button[aria-label="Add ingredients to the prompt box"]'),
   },
   mediaDialog: {
-    describe: "Add media dialog (role dialog or aria-modal)",
-    locate: (page) => page.locator("[role=dialog],[aria-modal=true]"),
+    describe: 'Dialog "Add assets to the project" (accessible name matches /add assets/i)',
+    locate: (page) => dialogOf(page),
+  },
+  mediaDialogLoading: {
+    describe: 'Progressbar "Loading�" inside the add assets dialog',
+    locate: (page) => dialogOf(page).getByRole("progressbar"),
+  },
+  mediaDialogClose: {
+    describe: 'Add assets dialog button "Close"',
+    locate: (page) => dialogOf(page).getByRole("button", { name: "Close", exact: true }),
   },
   mediaDialogUpload: {
-    describe: 'Add media dialog button "Upload media" (or any "Upload ..." variant)',
-    locate: (page) =>
-      page
-        .locator("[role=dialog],[aria-modal=true]")
-        .first()
-        .locator("button")
-        .filter({ hasText: /upload/i }),
+    describe: 'Add assets dialog button "Upload media"',
+    locate: (page) => dialogOf(page).getByRole("button", { name: /upload media/i }),
   },
   mediaDialogSelected: {
-    describe: "Selected tile in the add media dialog (role option, aria-selected true)",
-    locate: (page) =>
-      page
-        .locator("[role=dialog],[aria-modal=true]")
-        .first()
-        .locator('[role=option][aria-selected="true"]'),
+    describe: "Selected tile in the add assets dialog (role option, aria-selected true)",
+    locate: (page) => dialogOf(page).locator('[role=option][aria-selected="true"]'),
   },
   mediaDialogTiles: {
-    describe: "Tiles of the add media dialog (role option)",
-    locate: (page) =>
-      page.locator("[role=dialog],[aria-modal=true]").first().locator("[role=option]"),
+    describe: 'Assets of the dialog listbox "Asset list" (role option, name "<title> Image")',
+    locate: (page) => dialogOf(page).getByRole("option"),
   },
   mediaDialogConfirm: {
-    describe: 'Add media dialog confirm button "Add to Prompt" (or "Add to ..." variant)',
+    describe: 'Optional confirm button "Add to Prompt" (absent in the live UI)',
     locate: (page) =>
-      page
-        .locator("[role=dialog],[aria-modal=true]")
-        .first()
+      dialogOf(page)
         .locator("button")
         .filter({ hasText: /add to (prompt|scene|project)/i }),
   },
-  mediaDialogCharactersTab: {
-    describe: 'Add media dialog tab or button "Characters"',
-    locate: (page) =>
-      page
-        .locator("[role=dialog],[aria-modal=true]")
-        .first()
-        .locator("button, [role=tab]")
-        .filter({ hasText: /characters/i }),
+  mediaDialogCategory: {
+    describe: 'Dialog dropdown button "Filter by category" (text "All")',
+    locate: (page) => dialogOf(page).getByRole("button", { name: /filter by category/i }),
+  },
+  mediaDialogCategoryOptions: {
+    describe: "Options of the open category dropdown (menu items or options)",
+    locate: (page) => page.locator("[role=menuitem], [role=menuitemradio], [role=option]"),
+  },
+  mediaDialogSearch: {
+    describe: 'Add assets dialog textbox "Search assets"',
+    locate: (page) => dialogOf(page).getByRole("textbox", { name: /search assets/i }),
+  },
+  promptArea: {
+    describe: "Smallest container holding the prompt box and the submit button",
+    locate: (page) => promptAreaOf(page),
   },
   attachedReferences: {
-    describe:
-      "Images of attached references inside the prompt area (smallest container holding the prompt box and the submit button)",
-    locate: (page) =>
-      page
-        .locator("div")
-        .filter({ has: page.locator('div.ProseMirror[contenteditable="true"]') })
-        .filter({ has: page.getByRole("button", { name: "Start generation", exact: true }) })
-        .last()
-        .locator("img"),
+    describe: "Images of attached references inside the prompt area",
+    locate: (page) => promptAreaOf(page).locator("img"),
   },
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
@@ -225,6 +230,6 @@ export const subModeChip = (page: Page, mode: "frames" | "ingredients") =>
 /** Empty frame slot of the prompt area; a filled slot no longer shows its label. */
 export const frameSlot = (page: Page, slot: "Start" | "End") =>
   page.getByText(slot, { exact: true });
-/** Tile of a saved character in the add media dialog, by its exact name. */
-export const characterTile = (page: Page, name: string) =>
-  page.locator("[role=dialog],[aria-modal=true]").first().getByText(name, { exact: true });
+/** Asset option in the add assets dialog whose name starts with the exact title. */
+export const assetOption = (page: Page, name: string) =>
+  dialogOf(page).getByRole("option").filter({ hasText: name });

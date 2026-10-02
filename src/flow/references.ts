@@ -3,7 +3,7 @@ import type { Locator, Page } from "playwright-core";
 import { FlowPilotError } from "../core/errors.js";
 import type { JobRequest } from "../core/schemas.js";
 import { clickRobust, dismissOverlays } from "./overlays.js";
-import { characterTile, frameSlot, selectors, subModeChip } from "./selectors.js";
+import { assetOption, frameSlot, selectors, subModeChip } from "./selectors.js";
 import { openSettings } from "./settings-read.js";
 
 type Slot = "Start" | "End";
@@ -68,36 +68,45 @@ async function waitDialog(page: Page): Promise<Locator> {
   await d.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {
     throw new FlowPilotError("references_not_attached", "flow.refs.dialogNotOpen");
   });
+  await selectors.mediaDialogLoading
+    .locate(page)
+    .first()
+    .waitFor({ state: "hidden", timeout: 15_000 })
+    .catch(() => undefined);
   return d;
 }
 
-/** Opens the add media dialog with the ingredients button. Leaves it open. */
+/** Opens the add assets dialog with the ingredients button. Leaves it open. */
 export async function openAddMediaDialog(page: Page): Promise<Locator> {
   await clickRobust(selectors.addIngredientsButton.locate(page));
   return waitDialog(page);
 }
 
-/** Adds the selected tile to the prompt and waits for the dialog to close. */
-async function confirm(page: Page, d: Locator): Promise<void> {
-  await clickRobust(selectors.mediaDialogConfirm.locate(page));
-  await d.waitFor({ state: "hidden", timeout: 10_000 });
+/** Clicks the confirm button only if the dialog has one, then closes the dialog if still open. */
+async function finishDialog(page: Page, d: Locator): Promise<void> {
+  const confirm = selectors.mediaDialogConfirm.locate(page).first();
+  if (await confirm.isVisible().catch(() => false)) await clickRobust(confirm);
+  await d.waitFor({ state: "hidden", timeout: 3000 }).catch(async () => {
+    await clickRobust(selectors.mediaDialogClose.locate(page)).catch(() => undefined);
+    await d.waitFor({ state: "hidden", timeout: 5000 });
+  });
 }
 
-/** Uploads a file in the open dialog; the upload is auto-selected, then confirmed. */
+/** Uploads a file in the open dialog; Flow selects or attaches it by itself. */
 async function uploadAndConfirm(page: Page, d: Locator, file: string): Promise<void> {
   const [chooser] = await Promise.all([
     page.waitForEvent("filechooser", { timeout: 15_000 }),
     clickRobust(selectors.mediaDialogUpload.locate(page)),
   ]);
   await chooser.setFiles(file);
-  await selectors.mediaDialogSelected
-    .locate(page)
-    .first()
-    .waitFor({ state: "visible", timeout: 30_000 })
-    .catch(async () => {
-      await selectors.mediaDialogTiles.locate(page).first().click();
-    });
-  await confirm(page, d).catch(async () => {
+  await Promise.race([
+    selectors.mediaDialogSelected
+      .locate(page)
+      .first()
+      .waitFor({ state: "visible", timeout: 30_000 }),
+    d.waitFor({ state: "hidden", timeout: 30_000 }),
+  ]).catch(() => undefined);
+  await finishDialog(page, d).catch(async () => {
     await dismissOverlays(page);
     throw new FlowPilotError("references_not_attached", "flow.refs.uploadFailed", { path: file });
   });
@@ -119,20 +128,47 @@ async function fillFrame(page: Page, slot: Slot, file: string): Promise<boolean>
   return true;
 }
 
+/** Picks a saved character: category filter, search by name, click the matching asset. */
 async function addCharacter(page: Page, name: string): Promise<void> {
   const d = await openAddMediaDialog(page);
-  await clickRobust(selectors.mediaDialogCharactersTab.locate(page)).catch(() => undefined);
-  const tile = characterTile(page, name).first();
+  await clickRobust(selectors.mediaDialogCategory.locate(page)).catch(() => undefined);
+  const category = selectors.mediaDialogCategoryOptions
+    .locate(page)
+    .filter({ hasText: /character/i });
+  if (
+    await category
+      .first()
+      .isVisible({ timeout: 2000 })
+      .catch(() => false)
+  ) {
+    await clickRobust(category);
+    await page.waitForTimeout(500);
+  }
+  await selectors.mediaDialogSearch
+    .locate(page)
+    .first()
+    .fill(name)
+    .catch(() => undefined);
+  const tile = assetOption(page, name).first();
   try {
     await tile.waitFor({ state: "visible", timeout: 8000 });
   } catch {
-    await page.keyboard.press("Escape").catch(() => undefined);
+    await clickRobust(selectors.mediaDialogClose.locate(page)).catch(() => undefined);
     await dismissOverlays(page);
     throw new FlowPilotError("character_not_found", "flow.refs.characterNotFound", { name });
   }
   await clickRobust(tile);
-  await confirm(page, d);
+  await finishDialog(page, d);
 }
+
+/** Counts thumbnails in the prompt area: images, or elements with a background image. */
+const countThumbnails = (page: Page) =>
+  selectors.promptArea.locate(page).evaluate((el) => {
+    const bg = [...el.querySelectorAll("*")].filter(
+      (e) => getComputedStyle(e).backgroundImage !== "none",
+    );
+    return el.querySelectorAll("img").length + bg.length;
+  });
 
 const countAttached = (page: Page) => selectors.attachedReferences.locate(page).count();
 
@@ -144,6 +180,7 @@ export async function attachReferences(page: Page, plan: ReferencePlan): Promise
   if (!plan.subMode && expectedNewReferences(plan) === 0) return;
   if (plan.subMode) await chooseSubMode(page, plan.subMode);
   const before = await countAttached(page);
+  const thumbsBefore = await countThumbnails(page).catch(() => 0);
   const skipped: Slot[] = [];
   for (const { slot, file } of plan.frames) {
     if (!(await fillFrame(page, slot, file))) skipped.push(slot);
@@ -155,8 +192,12 @@ export async function attachReferences(page: Page, plan: ReferencePlan): Promise
 
   const expected = expectedNewReferences(plan, skipped);
   await page.waitForTimeout(1000);
-  const found = (await countAttached(page)) - before;
-  if (found < expected) {
+  const after = await countAttached(page);
+  const found = after - before;
+  // Fallback when the image selector sees nothing at all: any new thumbnail counts.
+  const thumbsFound =
+    before === 0 && after === 0 ? (await countThumbnails(page).catch(() => 0)) - thumbsBefore : 0;
+  if (found < expected && thumbsFound < expected) {
     throw new FlowPilotError("references_not_attached", "flow.refs.notAttached", {
       expected,
       found,
