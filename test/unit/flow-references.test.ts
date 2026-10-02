@@ -17,22 +17,16 @@ describe("planReferences", () => {
 
   it("uses Frames mode for start and end frames, start first", () => {
     const plan = planReferences({ ...video, endFrame: "e.png", startFrame: "s.png" });
-    expect(plan.subMode).toBe("frames");
     expect(plan.frames).toEqual([
       { slot: "Start", file: "s.png" },
       { slot: "End", file: "e.png" },
     ]);
   });
 
-  it("uses Ingredients mode for video ingredients and characters", () => {
-    expect(planReferences({ ...video, ingredients: ["a.png"] }).subMode).toBe("ingredients");
-    expect(planReferences({ ...video, characters: ["Mia"] }).subMode).toBe("ingredients");
-  });
-
-  it("selects no sub-mode for images", () => {
+  it("keeps ingredients and characters", () => {
     const plan = planReferences({ type: "image", ingredients: ["a.png"], characters: ["Mia"] });
-    expect(plan.subMode).toBeUndefined();
     expect(plan.ingredients).toEqual(["a.png"]);
+    expect(plan.characters).toEqual(["Mia"]);
   });
 
   it("rejects frames for images", () => {

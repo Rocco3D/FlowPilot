@@ -296,7 +296,7 @@ const panelOf = (page: Page) => page.locator("div.add-menu-popover-container");
 export const framePanel = (page: Page) => panelOf(page).first();
 export const framePanelSearch = (page: Page) =>
   panelOf(page).getByRole("textbox", { name: /search assets/i });
-export const framePanelTab = (page: Page, name: "Images" | "Uploads") =>
+export const framePanelTab = (page: Page, name: "Images" | "Uploads" | "Characters") =>
   panelOf(page).locator('mat-list-item[role="tab"]').filter({ hasText: name });
 export const framePanelUpload = (page: Page) =>
   panelOf(page).getByRole("button", { name: /upload media/i });

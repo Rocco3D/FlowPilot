@@ -23,8 +23,6 @@ type Slot = "Start" | "End";
 type RefInput = Pick<JobRequest, "type" | "startFrame" | "endFrame" | "ingredients" | "characters">;
 
 export interface ReferencePlan {
-  /** Video sub-mode to select in the settings; undefined without references and for images. */
-  subMode?: "frames" | "ingredients";
   frames: { slot: Slot; file: string }[];
   /** Files uploaded through the ingredients button. */
   ingredients: string[];
@@ -33,7 +31,7 @@ export interface ReferencePlan {
 
 const invalid = (key: string) => new FlowPilotError("invalid_input", key);
 
-/** Decides which sub-mode, slots and uploads a request needs. Throws on invalid combinations. */
+/** Decides which slots and uploads a request needs. Throws on invalid combinations. */
 export function planReferences(request: RefInput): ReferencePlan {
   const frames: ReferencePlan["frames"] = [];
   if (request.startFrame) frames.push({ slot: "Start", file: request.startFrame });
@@ -44,15 +42,7 @@ export function planReferences(request: RefInput): ReferencePlan {
   if (frames.length > 0 && (ingredients.length > 0 || characters.length > 0)) {
     throw invalid("flow.refs.framesExclusive");
   }
-  const subMode =
-    request.type !== "video"
-      ? undefined
-      : frames.length > 0
-        ? "frames"
-        : ingredients.length + characters.length > 0
-          ? "ingredients"
-          : undefined;
-  return { ...(subMode ? { subMode } : {}), frames, ingredients, characters };
+  return { frames, ingredients, characters };
 }
 
 /** Number of new references the prompt area must show, given which frame slots were skipped. */
@@ -87,12 +77,6 @@ async function waitDialog(page: Page): Promise<Locator> {
     .waitFor({ state: "hidden", timeout: 15_000 })
     .catch(() => undefined);
   return d;
-}
-
-/** Opens the add assets dialog with the ingredients button. Leaves it open. */
-export async function openAddMediaDialog(page: Page): Promise<Locator> {
-  await clickRobust(selectors.addIngredientsButton.locate(page));
-  return waitDialog(page);
 }
 
 /** Clicks the confirm button only if the dialog has one, then closes the dialog if still open. */
@@ -192,7 +176,12 @@ async function fillFrame(
 async function closeFramePanel(page: Page): Promise<void> {
   const panel = framePanel(page);
   if (!(await panel.isVisible().catch(() => false))) return;
-  await clickRobust(framePanelClose(page)).catch(() => undefined);
+  // The ingredients panel has no Close button: Escape closes it.
+  if (await framePanelClose(page).count()) {
+    await clickRobust(framePanelClose(page)).catch(() => undefined);
+  } else {
+    await page.keyboard.press("Escape");
+  }
   await panel.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
 }
 
@@ -283,9 +272,77 @@ async function addIngredient(page: Page, file: string, opts: UploadOptions): Pro
   await uploadAndConfirm(page, dialog, file, opts);
 }
 
+/** Picks a saved character in the panel: Characters tab, search by name, exact match preferred. */
+async function addCharacterInPanel(page: Page, name: string): Promise<void> {
+  const notFound = () =>
+    new FlowPilotError("character_not_found", "flow.refs.characterNotFound", { name });
+  const chipsBefore = await selectors.ingredientChips.locate(page).count();
+  const attachedBefore = await countAttached(page);
+  const attached = async () =>
+    (await selectors.ingredientChips.locate(page).count()) > chipsBefore ||
+    (await countAttached(page)) > attachedBefore;
+  try {
+    await clickRobust(framePanelTab(page, "Characters").first());
+    await page.waitForTimeout(500);
+    await framePanelSearch(page)
+      .first()
+      .fill(name)
+      .catch(() => undefined);
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const options = framePanel(page).getByRole("option");
+    const exact = options.filter({
+      hasText: new RegExp(`^\\s*${escaped}\\s*(Character|Image)?\\s*$`),
+    });
+    const starts = framePanelAsset(page, name);
+    const tile = exact.or(starts).first();
+    await tile.waitFor({ state: "visible", timeout: 8000 }).catch(() => {
+      throw notFound();
+    });
+    await clickRobust(
+      (await exact
+        .first()
+        .isVisible()
+        .catch(() => false))
+        ? exact.first()
+        : tile,
+    );
+    const panel = framePanel(page);
+    if (await panel.isVisible().catch(() => false)) {
+      const confirm = framePanelConfirm(page).first();
+      const shown = await confirm
+        .waitFor({ state: "visible", timeout: 2000 })
+        .then(() => true)
+        .catch(() => false);
+      if (shown) await clickRobust(confirm);
+    }
+    for (let i = 0; i < 10 && !(await attached()); i += 1) await page.waitForTimeout(500);
+    if (!(await attached())) throw notFound();
+  } catch (error) {
+    await closeFramePanel(page);
+    throw error;
+  }
+  await closeFramePanel(page);
+}
+
 /** Picks a saved character: category filter, search by name, click the matching asset. */
 async function addCharacter(page: Page, name: string): Promise<void> {
-  const d = await openAddMediaDialog(page);
+  await clickRobust(selectors.addIngredientsButton.locate(page));
+  await framePanel(page)
+    .or(selectors.mediaDialog.locate(page).first())
+    .first()
+    .waitFor({ state: "visible", timeout: 10_000 })
+    .catch(() => {
+      throw new FlowPilotError("references_not_attached", "flow.refs.dialogNotOpen");
+    });
+  if (
+    await framePanel(page)
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await addCharacterInPanel(page, name);
+    return;
+  }
+  const d = await waitDialog(page);
   await clickRobust(selectors.mediaDialogCategory.locate(page)).catch(() => undefined);
   const category = selectors.mediaDialogCategoryOptions
     .locate(page)
@@ -319,7 +376,7 @@ async function addCharacter(page: Page, name: string): Promise<void> {
 const countAttached = (page: Page) => selectors.attachedReferences.locate(page).count();
 
 /**
- * Selects the video sub-mode, attaches every reference and checks that the prompt area shows them.
+ * Attaches every reference and checks that the prompt area shows them.
  * Does nothing when the plan is empty.
  */
 export async function attachReferences(
