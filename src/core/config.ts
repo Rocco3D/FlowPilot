@@ -17,6 +17,9 @@ export const Config = z.object({
 });
 export type Config = z.infer<typeof Config>;
 
+// Fields whose raw string is parsed as a number; all others stay strings.
+const numericKeys = new Set<string>(["outputs", "maxCreditsPerJob", "monthlyCreditLimit", "port"]);
+
 function configFile(dir: string): string {
   return path.join(dir, "config.json");
 }
@@ -67,9 +70,8 @@ export function getConfigValue(key: string, dir?: string): Config[keyof Config] 
 export function setConfigValue(key: string, rawValue: string, dir: string = configDir()): Config {
   assertKey(key);
   const current = loadConfig(dir);
-  // Numbers are parsed; everything else stays a string.
-  const isNumber = rawValue.trim() !== "" && !Number.isNaN(Number(rawValue));
-  const parsed = Config.safeParse({ ...current, [key]: isNumber ? Number(rawValue) : rawValue });
+  const value = numericKeys.has(key) && rawValue.trim() !== "" ? Number(rawValue) : rawValue;
+  const parsed = Config.safeParse({ ...current, [key]: value });
   if (!parsed.success) throw invalid(configFile(dir), `${key}: ${parsed.error.message}`);
   saveConfig(parsed.data, dir);
   return parsed.data;
