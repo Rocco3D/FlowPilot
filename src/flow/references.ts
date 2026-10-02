@@ -180,12 +180,13 @@ async function fillFrame(
 ): Promise<boolean> {
   const target = frameSlot(page, slot).first();
   if ((await target.count()) === 0) return false;
+  const chipsBefore = await selectors.ingredientChips.locate(page).count();
   await clickRobust(target);
   try {
     await pickFrame(page, file, opts);
     const filled = async () =>
       (await frameSlot(page, slot).count()) === 0 ||
-      (await frameSlot(page, slot).locator("img").count()) > 0;
+      (await selectors.ingredientChips.locate(page).count()) > chipsBefore;
     for (let i = 0; i < 10 && !(await filled()); i += 1) await page.waitForTimeout(500);
     if (!(await filled())) {
       throw new FlowPilotError("references_not_attached", "flow.refs.frameNotFilled", { slot });
@@ -245,7 +246,15 @@ async function pickFrame(page: Page, file: string, opts: UploadOptions): Promise
     }
   }
   await clickRobust(asset);
-  await clickRobust(framePanelConfirm(page));
+  // Selecting the asset usually attaches it and closes the panel by itself.
+  if (await panel.isVisible().catch(() => false)) {
+    const confirm = framePanelConfirm(page).first();
+    const shown = await confirm
+      .waitFor({ state: "visible", timeout: 2000 })
+      .then(() => true)
+      .catch(() => false);
+    if (shown) await clickRobust(confirm);
+  }
   await panel.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {
     throw new FlowPilotError("references_not_attached", "flow.refs.framePanelNotOpen");
   });

@@ -154,9 +154,8 @@ export const selectors = {
     locate: (page) => page.locator('button[aria-label="Add ingredients to the prompt box"]'),
   },
   ingredientChips: {
-    describe: 'Attached reference buttons named "Ingredient" inside flow-prompt-box',
-    locate: (page) =>
-      page.locator("flow-prompt-box").getByRole("button", { name: "Ingredient", exact: true }),
+    describe: 'Attached reference buttons named "...ingredient" inside flow-prompt-box',
+    locate: (page) => page.locator("flow-prompt-box").getByRole("button", { name: /ingredient$/i }),
   },
   clearPromptButton: {
     describe: 'Prompt area button named "Clear prompt"',
