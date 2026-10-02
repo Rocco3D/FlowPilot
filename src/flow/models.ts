@@ -78,6 +78,8 @@ async function readModel(
   kind: JobType,
   item: { name: string; audio: boolean },
 ): Promise<ModelInfo> {
+  // Costs scale with the output count, so read them per single output.
+  await pickChip(page, outputChip(page, 1), "x1");
   const trigger = await readSettingsTrigger(page);
   const ratios = await ratiosAvailable(page);
   const chipRes = await chipTexts(resolutionChips(page));

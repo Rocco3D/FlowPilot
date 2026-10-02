@@ -51,9 +51,10 @@ export function parseCredits(text: string): number | undefined {
 
 /** Turns a menu item or dropdown text ("volume_up Veo 3.1 - Fast", "🍌 Nano Banana 2") into a model. */
 export function parseModelItem(text: string): MenuModel {
-  const audio = /\bvolume_up\b/.test(text);
+  // Icon ligatures are glued to the name ("volume_upVeo 3.1"), so no word boundaries.
+  const audio = text.includes("volume_up");
   const name = text
-    .replace(/\b(volume_up|arrow_drop_down)\b/g, "")
+    .replace(/volume_up|volume_off|arrow_drop_down/g, "")
     .replace(/^[^\p{L}\p{N}]+/u, "")
     .replace(/\s+/g, " ")
     .trim();

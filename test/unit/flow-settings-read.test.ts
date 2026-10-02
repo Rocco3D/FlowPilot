@@ -59,6 +59,17 @@ describe("parseModelItem", () => {
     });
   });
 
+  it("strips icon text glued to the name", () => {
+    expect(parseModelItem("volume_upVeo 3.1 - Lite")).toEqual({
+      name: "Veo 3.1 - Lite",
+      audio: true,
+    });
+    expect(parseModelItem("volume_offOmni 1.1 Flash")).toEqual({
+      name: "Omni 1.1 Flash",
+      audio: false,
+    });
+  });
+
   it("strips the emoji of image models", () => {
     expect(parseModelItem("🍌 Nano Banana 2 arrow_drop_down")).toEqual({
       name: "Nano Banana 2",
