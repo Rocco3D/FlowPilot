@@ -23,6 +23,12 @@ FlowPilot is a local service that drives Google Flow (AI image and video generat
 - Google Chrome
 - A Google account with access to Google Flow
 
+## Uploads and Google's rights confirmation
+
+When a job uses reference files (start/end frame, ingredients), Flow asks you to confirm that you have the rights to each uploaded file and that you comply with Google's Prohibited Use Policy. FlowPilot clicks "I agree" automatically by default, so that queued jobs can run unattended. By using reference files you make that declaration yourself.
+
+To turn this off, run `flowpilot config set acceptUploadRights false`. Jobs with uploads then stop with an explanation.
+
 ## Disclaimer
 
 FlowPilot is unofficial. It is not affiliated with or endorsed by Google. It automates your own Google Flow session in your own browser, and you are responsible for complying with Google's Terms of Service.

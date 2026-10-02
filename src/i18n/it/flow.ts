@@ -13,8 +13,6 @@ export default {
   "nav.projectNotOpened": "Flow non ha aperto una pagina di progetto.",
   "models.settingsNotOpen": "Il popover delle impostazioni di Flow non si è aperto.",
   "models.menuNotOpen": "Il menu del modello di Flow non si è aperto.",
-  "gen.unsupportedInput":
-    "I fotogrammi iniziali, finali, gli ingredienti e i personaggi non sono ancora supportati.",
   "gen.settingsNotApplied": "Flow non ha applicato le impostazioni richieste: {details}.",
   "gen.settingsMismatch": "{field} dovrebbe essere {wanted} ma è {actual}",
   "gen.creditsUnreadable": "Non riesco a leggere il costo dei crediti da Flow.",
@@ -26,6 +24,16 @@ export default {
   "gen.creditsExhausted": "Flow segnala che l'account è senza crediti.",
   "gen.blocked": "Flow ha rifiutato il prompt (politica sui contenuti).",
   "gen.failed": "Flow ha segnalato che la generazione non è riuscita.",
+  "refs.fileNotFound": "File di input non trovato: {path}.",
+  "refs.framesVideoOnly": "I fotogrammi iniziale e finale sono disponibili solo per i video.",
+  "refs.framesExclusive": "I fotogrammi non si possono combinare con ingredienti o personaggi.",
+  "refs.dialogNotOpen": "La finestra Flow per aggiungere i media non si è aperta.",
+  "refs.uploadFailed": "Flow non ha accettato il file caricato {path}.",
+  "refs.characterNotFound": "Nessun personaggio Flow salvato si chiama {name}.",
+  "refs.notAttached":
+    "Mi aspettavo {expected} nuovi riferimenti nell'area del prompt ma ne ho trovati {found}.",
+  "refs.rightsNotAccepted":
+    "Flow chiede di confermare i diritti sul file caricato {path}, ma acceptUploadRights è disattivato. Esegui: flowpilot config set acceptUploadRights true",
   "download.viewerNotOpened": "Flow non ha aperto il visualizzatore dei risultati.",
   "download.tierLocked": "Il tier di download richiesto necessita un aggiornamento del piano Flow.",
   "download.fetchFailed": "Non riesco a scaricare un risultato (HTTP {status}).",

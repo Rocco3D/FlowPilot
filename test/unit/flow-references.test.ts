@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { setLocale } from "../../src/i18n/index.js";
 import {
   assertFilesExist,
   expectedNewReferences,
@@ -6,6 +7,8 @@ import {
 } from "../../src/flow/references.js";
 
 const video = { type: "video" as const };
+
+beforeAll(() => setLocale("en"));
 
 describe("planReferences", () => {
   it("is empty without references", () => {

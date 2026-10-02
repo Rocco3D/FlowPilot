@@ -27,10 +27,11 @@ export default {
   "refs.framesVideoOnly": "Start and end frames are only available for video.",
   "refs.framesExclusive": "Frames cannot be combined with ingredients or characters.",
   "refs.dialogNotOpen": "The Flow add media dialog did not open.",
-  "refs.slotNotFound": "The {slot} frame slot was not found in the prompt area.",
   "refs.uploadFailed": "Flow did not accept the uploaded file {path}.",
   "refs.characterNotFound": "No saved Flow character is named {name}.",
   "refs.notAttached": "Expected {expected} new references in the prompt area but found {found}.",
+  "refs.rightsNotAccepted":
+    "Flow asks to confirm the rights to the uploaded file {path}, but acceptUploadRights is off. Run: flowpilot config set acceptUploadRights true",
   "download.viewerNotOpened": "Flow did not open the result viewer.",
   "download.tierLocked": "The requested download tier needs a Flow plan upgrade.",
   "download.fetchFailed": "Could not download a result (HTTP {status}).",

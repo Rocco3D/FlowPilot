@@ -14,11 +14,16 @@ export const Config = z.object({
   locale: z.string().optional(),
   port: z.number().int().min(1024).max(65535).default(47820),
   logLevel: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  /** Click "I agree" on the rights dialog Flow shows after each upload. */
+  acceptUploadRights: z.boolean().default(true),
 });
 export type Config = z.infer<typeof Config>;
 
 // Fields whose raw string is parsed as a number; all others stay strings.
 const numericKeys = new Set<string>(["outputs", "maxCreditsPerJob", "monthlyCreditLimit", "port"]);
+
+// Fields whose "true"/"false" string becomes a boolean.
+const booleanKeys = new Set<string>(["acceptUploadRights"]);
 
 function configFile(dir: string): string {
   return path.join(dir, "config.json");
@@ -70,7 +75,11 @@ export function getConfigValue(key: string, dir?: string): Config[keyof Config] 
 export function setConfigValue(key: string, rawValue: string, dir: string = configDir()): Config {
   assertKey(key);
   const current = loadConfig(dir);
-  const value = numericKeys.has(key) && rawValue.trim() !== "" ? Number(rawValue) : rawValue;
+  let value: string | number | boolean = rawValue;
+  if (numericKeys.has(key) && rawValue.trim() !== "") value = Number(rawValue);
+  else if (booleanKeys.has(key) && (rawValue === "true" || rawValue === "false")) {
+    value = rawValue === "true";
+  }
   const parsed = Config.safeParse({ ...current, [key]: value });
   if (!parsed.success) throw invalid(configFile(dir), `${key}: ${parsed.error.message}`);
   saveConfig(parsed.data, dir);

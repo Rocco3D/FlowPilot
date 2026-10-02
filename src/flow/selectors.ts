@@ -194,6 +194,22 @@ export const selectors = {
     describe: 'Add assets dialog textbox "Search assets"',
     locate: (page) => dialogOf(page).getByRole("textbox", { name: /search assets/i }),
   },
+  rightsDialog: {
+    describe: 'Dialog "Rights to use this image" shown after an upload',
+    locate: (page) => page.getByRole("dialog", { name: /rights to use/i }),
+  },
+  rightsAgree: {
+    describe: 'Rights dialog button "I agree"',
+    locate: (page) =>
+      page
+        .getByRole("dialog", { name: /rights to use/i })
+        .getByRole("button", { name: /i agree/i }),
+  },
+  rightsCancel: {
+    describe: 'Rights dialog button "Cancel"',
+    locate: (page) =>
+      page.getByRole("dialog", { name: /rights to use/i }).getByRole("button", { name: /cancel/i }),
+  },
   promptArea: {
     describe: "Smallest container holding the prompt box and the submit button",
     locate: (page) => promptAreaOf(page),

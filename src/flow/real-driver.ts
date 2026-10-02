@@ -2,6 +2,7 @@ import type { Page } from "playwright-core";
 import { BrowserSession } from "../browser/session.js";
 import { loadConfig } from "../core/config.js";
 import { checkSpend, recordSpend } from "../core/credits.js";
+import { createLogger } from "../core/logger.js";
 import type {
   Job,
   JobResult,
@@ -73,7 +74,10 @@ export class RealFlowDriver implements FlowDriver {
       ...(request.confirm ? { confirm: true } : {}),
     });
 
-    await attachReferences(page, references);
+    await attachReferences(page, references, {
+      acceptUploadRights: config.acceptUploadRights,
+      log: createLogger({ level: config.logLevel }),
+    });
     await fillPrompt(page, request.prompt);
     const before = await snapshotResults(page, request.type);
     await submitGeneration(page);

@@ -66,6 +66,13 @@ describe("config", () => {
     expect(loadConfig(dir).locale).toBe("it");
   });
 
+  it("coerces true/false to a boolean for acceptUploadRights", () => {
+    expect(loadConfig(dir).acceptUploadRights).toBe(true);
+    expect(setConfigValue("acceptUploadRights", "false", dir).acceptUploadRights).toBe(false);
+    expect(setConfigValue("acceptUploadRights", "true", dir).acceptUploadRights).toBe(true);
+    expect(codeOf(() => setConfigValue("acceptUploadRights", "maybe", dir))).toBe("config_invalid");
+  });
+
   it("keeps numeric-looking values as strings for string fields", () => {
     expect(setConfigValue("locale", "123", dir).locale).toBe("123");
     expect(setConfigValue("defaultVideoModel", "123", dir).defaultVideoModel).toBe("123");

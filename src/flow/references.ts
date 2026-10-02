@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import type { Locator, Page } from "playwright-core";
 import { FlowPilotError } from "../core/errors.js";
+import type { Logger } from "../core/logger.js";
 import type { JobRequest } from "../core/schemas.js";
 import { clickRobust, dismissOverlays } from "./overlays.js";
 import { assetOption, frameSlot, selectors, subModeChip } from "./selectors.js";
@@ -92,13 +93,43 @@ async function finishDialog(page: Page, d: Locator): Promise<void> {
   });
 }
 
+export interface UploadOptions {
+  acceptUploadRights: boolean;
+  log?: Logger;
+}
+
+/** Answers the rights dialog Flow shows after an upload, if it appears. */
+async function answerRights(page: Page, file: string, opts: UploadOptions): Promise<void> {
+  const rights = selectors.rightsDialog.locate(page).first();
+  const shown = await rights
+    .waitFor({ state: "visible", timeout: 10_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!shown) return;
+  if (!opts.acceptUploadRights) {
+    await clickRobust(selectors.rightsCancel.locate(page)).catch(() => undefined);
+    throw new FlowPilotError("upload_rights_not_accepted", "flow.refs.rightsNotAccepted", {
+      path: file,
+    });
+  }
+  await clickRobust(selectors.rightsAgree.locate(page));
+  await rights.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => undefined);
+  opts.log?.info(`accepted Flow upload rights dialog for ${file}`);
+}
+
 /** Uploads a file in the open dialog; Flow selects or attaches it by itself. */
-async function uploadAndConfirm(page: Page, d: Locator, file: string): Promise<void> {
+async function uploadAndConfirm(
+  page: Page,
+  d: Locator,
+  file: string,
+  opts: UploadOptions,
+): Promise<void> {
   const [chooser] = await Promise.all([
     page.waitForEvent("filechooser", { timeout: 15_000 }),
     clickRobust(selectors.mediaDialogUpload.locate(page)),
   ]);
   await chooser.setFiles(file);
+  await answerRights(page, file, opts);
   await Promise.race([
     selectors.mediaDialogSelected
       .locate(page)
@@ -120,11 +151,16 @@ async function chooseSubMode(page: Page, mode: "frames" | "ingredients"): Promis
 }
 
 /** Fills a frame slot; returns false when the slot is already filled (its label is gone). */
-async function fillFrame(page: Page, slot: Slot, file: string): Promise<boolean> {
+async function fillFrame(
+  page: Page,
+  slot: Slot,
+  file: string,
+  opts: UploadOptions,
+): Promise<boolean> {
   const target = frameSlot(page, slot).first();
   if ((await target.count()) === 0) return false;
   await clickRobust(target);
-  await uploadAndConfirm(page, await waitDialog(page), file);
+  await uploadAndConfirm(page, await waitDialog(page), file, opts);
   return true;
 }
 
@@ -176,17 +212,21 @@ const countAttached = (page: Page) => selectors.attachedReferences.locate(page).
  * Selects the video sub-mode, attaches every reference and checks that the prompt area shows them.
  * Does nothing when the plan is empty.
  */
-export async function attachReferences(page: Page, plan: ReferencePlan): Promise<void> {
+export async function attachReferences(
+  page: Page,
+  plan: ReferencePlan,
+  opts: UploadOptions,
+): Promise<void> {
   if (!plan.subMode && expectedNewReferences(plan) === 0) return;
   if (plan.subMode) await chooseSubMode(page, plan.subMode);
   const before = await countAttached(page);
   const thumbsBefore = await countThumbnails(page).catch(() => 0);
   const skipped: Slot[] = [];
   for (const { slot, file } of plan.frames) {
-    if (!(await fillFrame(page, slot, file))) skipped.push(slot);
+    if (!(await fillFrame(page, slot, file, opts))) skipped.push(slot);
   }
   for (const file of plan.ingredients) {
-    await uploadAndConfirm(page, await openAddMediaDialog(page), file);
+    await uploadAndConfirm(page, await openAddMediaDialog(page), file, opts);
   }
   for (const name of plan.characters) await addCharacter(page, name);
 
