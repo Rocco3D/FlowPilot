@@ -194,6 +194,8 @@ flowpilot config set outputDir ~/Videos # Change a setting
 | `idleMinutes`        | 30                    | Minutes before the service auto-stops (0 = never) |
 | `showBrowser`        | false                 | Show the automation window (normally off-screen)  |
 
+Changes to `idleMinutes` and `showBrowser` take effect the next time the service starts (after `flowpilot stop` or an idle shutdown).
+
 ## Languages
 
 FlowPilot is available in English and Italian.
