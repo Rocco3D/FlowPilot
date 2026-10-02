@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertChromeExists,
   automationArgs,
   chromeExecutable,
   parseDevToolsPort,
@@ -62,5 +63,17 @@ describe("chromeExecutable", () => {
   it("defaults per platform", () => {
     expect(chromeExecutable({ platform: "linux", env: {} })).toBe("google-chrome");
     expect(chromeExecutable({ platform: "darwin", env: {} })).toContain("Google Chrome.app");
+  });
+});
+
+describe("assertChromeExists", () => {
+  it("throws chrome_not_found for a missing absolute path", () => {
+    expect(() => assertChromeExists("/no/such/chrome", () => false)).toThrow(
+      expect.objectContaining({ code: "chrome_not_found" }),
+    );
+  });
+  it("accepts an existing path and bare command names", () => {
+    expect(() => assertChromeExists("/x/chrome", () => true)).not.toThrow();
+    expect(() => assertChromeExists("google-chrome", () => false)).not.toThrow();
   });
 });

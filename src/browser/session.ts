@@ -57,6 +57,13 @@ export function chromeExecutable(
   return "google-chrome";
 }
 
+/** Fails fast when an absolute Chrome path does not exist. */
+export function assertChromeExists(exe: string, exists: (file: string) => boolean = existsSync) {
+  if (path.isAbsolute(exe) && !exists(exe)) {
+    throw new FlowPilotError("chrome_not_found", "flow.session.chromeNotFound", { tried: exe });
+  }
+}
+
 export function automationArgs(profileDir: string, headed: boolean, url: string): string[] {
   return [
     `--user-data-dir=${profileDir}`,
@@ -120,7 +127,9 @@ export class BrowserSession {
   }
 
   private spawnChrome(args: string[]): void {
-    const child = spawn(this.executable(), args, { detached: true, stdio: "ignore" });
+    const exe = this.executable();
+    assertChromeExists(exe);
+    const child = spawn(exe, args, { detached: true, stdio: "ignore" });
     // Without an error listener a missing executable would crash the process.
     child.on("error", () => undefined);
     child.unref();
@@ -145,9 +154,11 @@ export class BrowserSession {
     this.spawnChrome(automationArgs(this.profileDir, this.headed, FLOW_URL));
     const port = await waitForPort(this.profileDir, 30000);
     if (port === undefined) {
-      const exe = this.executable();
-      if (path.isAbsolute(exe) && !existsSync(exe)) {
-        throw new FlowPilotError("chrome_not_found", "flow.session.chromeNotFound", { tried: exe });
+      // A bare command name (Linux) cannot be checked upfront.
+      if (!path.isAbsolute(this.executable())) {
+        throw new FlowPilotError("chrome_not_found", "flow.session.chromeNotFound", {
+          tried: this.executable(),
+        });
       }
       throw new FlowPilotError("chrome_no_debug_port", "flow.session.noDebugPort", {
         profileDir: this.profileDir,
