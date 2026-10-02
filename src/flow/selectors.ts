@@ -226,8 +226,12 @@ export const selectors = {
       page.getByRole("dialog", { name: /rights to use/i }).getByRole("button", { name: /cancel/i }),
   },
   attachedReferences: {
-    describe: "Flow images attached as references in the custom element flow-prompt-box",
-    locate: (page) => page.locator('flow-prompt-box img[src*="flow-content.google/image/"]'),
+    describe:
+      "Flow images attached as references in flow-prompt-box (uploads, and saved characters served from googleusercontent)",
+    locate: (page) =>
+      page.locator(
+        'flow-prompt-box img[src*="flow-content.google/image/"], flow-prompt-box img[alt="Character ingredient image"]',
+      ),
   },
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
