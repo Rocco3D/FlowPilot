@@ -67,6 +67,7 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
     configDir,
     dataDir,
     version,
+    logger,
     onShutdown: () => void stop(),
   });
   await new Promise<void>((resolve, reject) => {

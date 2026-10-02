@@ -3,10 +3,18 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readServiceInfo, startService, type RunningService } from "../../src/core/service.js";
 import type { Job, JobResult } from "../../src/core/schemas.js";
+import { FlowPilotError } from "../../src/core/errors.js";
+import type { SessionStatus } from "../../src/core/schemas.js";
 import { FakeDriver } from "../fakes/fake-driver.js";
 
 /** Like the fake driver, but writes a real file for each result. */
 class FileDriver extends FakeDriver {
+  doctorError: Error | undefined;
+
+  override doctor(): Promise<SessionStatus> {
+    return this.doctorError ? Promise.reject(this.doctorError) : super.doctor();
+  }
+
   override run(job: Job): Promise<{ results: JobResult[]; credits: number }> {
     fs.mkdirSync(job.request.outDir!, { recursive: true });
     const file = path.join(job.request.outDir!, `${job.id}.png`);
@@ -17,6 +25,7 @@ class FileDriver extends FakeDriver {
 
 let dir: string;
 let service: RunningService;
+let driver: FileDriver;
 let token: string;
 const imageJob = { type: "image", prompt: "a cat" };
 
@@ -32,8 +41,9 @@ beforeEach(async () => {
     path.join(configDir, "config.json"),
     JSON.stringify({ outputDir: path.join(dir, "out") }),
   );
+  driver = new FileDriver();
   service = await startService({
-    driver: new FileDriver(),
+    driver,
     configDir,
     dataDir: path.join(dir, "data"),
     port: 0,
@@ -145,6 +155,26 @@ describe("driver routes", () => {
     expect(await (await call("POST", "/doctor")).json()).toMatchObject({ signedIn: true });
     expect(await (await call("POST", "/selftest")).json()).toMatchObject({ ok: true });
     expect(await (await call("GET", "/models")).json()).toHaveLength(2);
+  });
+});
+
+describe("errors", () => {
+  it("keeps FlowPilotError code and message", async () => {
+    driver.doctorError = new FlowPilotError("chrome_not_found", "core.config.unknownKey", {
+      key: "x",
+    });
+    const res = await call("POST", "/doctor");
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: { code: "chrome_not_found", message: "Unknown configuration key: x" },
+    });
+  });
+
+  it("hides unexpected errors behind internal", async () => {
+    driver.doctorError = new Error("secret");
+    const res = await call("POST", "/doctor");
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: { code: "internal", message: "Internal error" } });
   });
 });
 

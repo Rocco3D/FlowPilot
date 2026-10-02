@@ -7,6 +7,7 @@ import type { FlowDriver } from "../flow/driver.js";
 import { loadConfig, setConfigValue } from "../core/config.js";
 import { monthTotal } from "../core/credits.js";
 import { FlowPilotError } from "../core/errors.js";
+import type { Logger } from "../core/logger.js";
 import type { JobStore } from "../core/jobs.js";
 import type { JobQueue } from "../core/queue.js";
 import { JobRequest } from "../core/schemas.js";
@@ -20,6 +21,7 @@ export interface HttpDeps {
   configDir?: string;
   dataDir?: string;
   version: string;
+  logger: Logger;
   /** Called after `POST /shutdown` has been answered. */
   onShutdown: () => void;
 }
@@ -69,14 +71,24 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
   }
 }
 
-function toHttpError(err: unknown): HttpError {
+const STATUS_BY_CODE: Record<string, number> = {
+  not_found: 404,
+  job_not_found: 404,
+  job_not_cancellable: 409,
+  bad_request: 400,
+  unauthorized: 401,
+};
+
+function toHttpError(err: unknown, logger: Logger): HttpError {
   if (err instanceof HttpError) return err;
   if (err instanceof ZodError) return badRequest(err.message);
   if (err instanceof FlowPilotError) {
-    if (err.code === "job_not_found") return new HttpError(404, err.code, err.message);
-    if (err.code === "job_not_cancellable") return new HttpError(409, err.code, err.message);
-    if (err.code.startsWith("config_")) return badRequest(err.message);
+    const status = STATUS_BY_CODE[err.code] ?? (err.code.startsWith("config_") ? 400 : 500);
+    return new HttpError(status, err.code, err.message);
   }
+  logger.error("unexpected error in HTTP handler", {
+    error: err instanceof Error ? (err.stack ?? err.message) : String(err),
+  });
   return new HttpError(500, "internal", t("core.error.internal"));
 }
 
@@ -159,7 +171,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
 
   return http.createServer((req, res) => {
     route(req, res).catch((err: unknown) => {
-      const e = toHttpError(err);
+      const e = toHttpError(err, deps.logger);
       send(res, e.status, { error: { code: e.code, message: e.message } });
     });
   });
