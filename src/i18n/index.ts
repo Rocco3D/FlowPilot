@@ -1,9 +1,10 @@
 import en from "./en/index.js";
+import it from "./it/index.js";
 
 type Catalog = Record<string, Record<string, string>>;
 
 // To add a language: create src/i18n/<code>/index.ts and register it here.
-const catalogs: Record<string, Catalog> = { en };
+const catalogs: Record<string, Catalog> = { en, it };
 
 const FALLBACK = "en";
 let override: string | undefined;

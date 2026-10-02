@@ -1,5 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getLocale, setLocale, t } from "../../src/i18n/index.js";
+
+beforeEach(() => {
+  setLocale("en");
+});
 
 afterEach(() => {
   setLocale(undefined);
