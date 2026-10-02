@@ -75,9 +75,7 @@ export function automationArgs(profileDir: string, headed: boolean, url: string)
     "--disable-background-timer-throttling",
     "--disable-backgrounding-occluded-windows",
     "--disable-renderer-backgrounding",
-    ...(headed
-      ? []
-      : ["--window-position=-32000,-32000", "--window-size=1280,800", "--start-minimized"]),
+    ...(headed ? [] : ["--window-position=-32000,-32000", "--window-size=1280,800"]),
     url,
   ];
 }
@@ -209,9 +207,12 @@ export class BrowserSession {
       const cdp = await page.context().newCDPSession(page);
       try {
         const { windowId } = await cdp.send("Browser.getWindowForTarget");
+        // Never minimize: Flow's menus stop working in a minimized window. Hidden means off-screen.
+        await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal" } });
+        const offset = this.headed ? 100 : -32000;
         await cdp.send("Browser.setWindowBounds", {
           windowId,
-          bounds: { windowState: this.headed ? "normal" : "minimized" },
+          bounds: { left: offset, top: offset, width: 1280, height: 800 },
         });
       } finally {
         await cdp.detach().catch(() => undefined);
