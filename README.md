@@ -19,7 +19,7 @@ FlowPilot is a local service that drives Google Flow (AI image and video generat
 ## Install
 
 ```bash
-npm install -g flowpilot-cli
+npm install -g Rocco3D/FlowPilot
 ```
 
 Or install from source:

@@ -19,7 +19,7 @@ FlowPilot è un servizio locale che controlla Google Flow (generazione di immagi
 ## Installazione
 
 ```bash
-npm install -g flowpilot-cli
+npm install -g Rocco3D/FlowPilot
 ```
 
 Oppure installalo dal codice sorgente:
