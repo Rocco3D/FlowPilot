@@ -122,7 +122,8 @@ export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
   );
   tool(
     "get_credits",
-    "Show the Google Flow credits spent this month, the remaining credits and the configured limits.",
+    "Show the Google Flow credits spent this month through FlowPilot, the remaining credits and the " +
+      "configured limits. `flowBalance.credits` is the real balance of the Google Flow account, read from Flow.",
     {},
     () => client.credits(),
   );

@@ -32,6 +32,7 @@ export default {
   "credits.remaining": "Rimanente questo mese: {value}",
   "credits.perJob": "Limite per job: {value}",
   "credits.monthly": "Limite mensile: {value}",
+  "credits.flowBalance": "Saldo Google Flow: {value} crediti (letto alle {time})",
   "video.description": "Genera un video",
   "image.description": "Genera un'immagine",
   "generate.promptOption": "Testo del prompt",

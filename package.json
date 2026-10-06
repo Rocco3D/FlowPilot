@@ -1,6 +1,6 @@
 {
   "name": "flowpilot-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local service that drives Google Flow through your own Chrome, with a CLI, a local HTTP API and an MCP server.",
   "keywords": [
     "google-flow",

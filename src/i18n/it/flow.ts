@@ -51,6 +51,8 @@ export default {
   "download.upscaleUnavailable":
     "Non sono riuscito a scaricare la qualità richiesta ({quality}). L'originale è ancora in Flow all'indirizzo {url}.",
   "download.noSource": "Non riesco a trovare il file multimediale di un risultato.",
+  "balance.unreadable":
+    "Non riesco a leggere il saldo dei crediti dal pannello dell'account di Flow.",
   "driver.notSignedIn":
     "Chrome è collegato ma non ha effettuato l'accesso a Flow. Esegui il comando di accesso.",
   "driver.fatal": "Il servizio FlowPilot è fallito: {reason}",

@@ -62,7 +62,7 @@ Health check. No authentication required.
 ```json
 {
   "ok": true,
-  "version": "0.1.1"
+  "version": "0.1.2"
 }
 ```
 
@@ -298,6 +298,7 @@ Lists all jobs, newest first.
     "startedAt": "2026-10-02T14:30:00.020Z",
     "finishedAt": "2026-10-02T14:30:40.500Z",
     "credits": 0,
+    "balance": 640,
     "results": [
       {
         "path": "C:\\Users\\me\\Documents\\FlowPilot\\20261002-143000000-a1b2-1.jpg",
@@ -331,6 +332,7 @@ Retrieves details of a specific job.
   "startedAt": "2026-10-02T14:30:00.020Z",
   "finishedAt": "2026-10-02T14:30:40.500Z",
   "credits": 0,
+  "balance": 640,
   "results": [
     {
       "path": "C:\\Users\\me\\Documents\\FlowPilot\\20261002-143000000-a1b2-1.jpg",
@@ -393,16 +395,23 @@ Retrieves credit information for the account.
   "monthTotal": 250,
   "maxCreditsPerJob": 20,
   "monthlyCreditLimit": 1000,
-  "remaining": 750
+  "remaining": 750,
+  "flowBalance": {
+    "credits": 640,
+    "readAt": "2026-10-06T21:22:36.933Z"
+  }
 }
 ```
 
 **Fields:**
 
-- `monthTotal` (integer): Total credits used this month.
+- `monthTotal` (integer): Credits spent this month through FlowPilot (FlowPilot's own ledger).
 - `maxCreditsPerJob` (integer): Maximum credits allowed per job.
-- `monthlyCreditLimit` (integer): Total monthly credit allocation.
-- `remaining` (integer): Credits remaining this month.
+- `monthlyCreditLimit` (integer): Monthly credit budget configured in FlowPilot.
+- `remaining` (integer): `monthlyCreditLimit` minus `monthTotal`.
+- `flowBalance` (object, optional): Real Google Flow balance of the account, read from Flow's account panel. While a job is running, the last balance read. Missing when Flow cannot be read (for example Chrome not signed in).
+  - `credits` (integer): Credits left on the account.
+  - `readAt` (string): ISO 8601 timestamp of the reading.
 
 ### GET /config
 
@@ -465,6 +474,7 @@ The `Job` object represents a generation task.
 - `startedAt` (string, optional): ISO 8601 timestamp when generation started.
 - `finishedAt` (string, optional): ISO 8601 timestamp when the job completed.
 - `credits` (integer, optional): Credits spent on this job.
+- `balance` (integer, optional): Google Flow credits left on the account after the job, read from Flow. Missing when Flow could not be read.
 - `results` (array): List of generated files (empty until job completes).
 - `error` (object, optional): Error details if the job failed.
   - `code` (string): Error code (e.g., "credits_over_job_limit", "agent_mode_on").

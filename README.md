@@ -143,6 +143,8 @@ Check your spending:
 flowpilot credits
 ```
 
+The spending and the limits are counted by FlowPilot itself. The same command also shows your real Google Flow balance, read from Flow's account panel. While a job is running, it shows the last balance read instead of touching the page. After each generation, the job result includes the balance left (`balance`).
+
 ## Jobs and the service
 
 One Flow session runs at a time. Jobs run one at a time in a queue.

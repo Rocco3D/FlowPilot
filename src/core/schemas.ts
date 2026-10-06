@@ -58,10 +58,19 @@ export const Job = z.object({
   startedAt: z.string().optional(),
   finishedAt: z.string().optional(),
   credits: z.number().int().optional(),
+  /** Google Flow credits left on the account after the job, read from Flow. */
+  balance: z.number().int().optional(),
   results: z.array(JobResult),
   error: JobError.optional(),
 });
 export type Job = z.infer<typeof Job>;
+
+/** Google Flow credits left on the account, as shown in Flow's account panel. */
+export const FlowBalance = z.object({
+  credits: z.number().int(),
+  readAt: z.string(),
+});
+export type FlowBalance = z.infer<typeof FlowBalance>;
 
 export const ModelInfo = z.object({
   name: z.string(),

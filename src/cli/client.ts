@@ -3,13 +3,22 @@ import path from "node:path";
 import { loadConfig, type Config } from "../core/config.js";
 import { FlowPilotError } from "../core/errors.js";
 import { configDir } from "../core/paths.js";
-import type { Job, JobRequest, ModelInfo, SelftestReport, SessionStatus } from "../core/schemas.js";
+import type {
+  FlowBalance,
+  Job,
+  JobRequest,
+  ModelInfo,
+  SelftestReport,
+  SessionStatus,
+} from "../core/schemas.js";
 
 export interface Credits {
   monthTotal: number;
   maxCreditsPerJob: number;
   monthlyCreditLimit: number;
   remaining: number;
+  /** Real Google Flow balance, when the service could read it. */
+  flowBalance?: FlowBalance;
 }
 
 export function resolvePort(port?: number): number {

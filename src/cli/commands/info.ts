@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { FlowPilotError } from "../../core/errors.js";
 import type { SelftestReport } from "../../core/schemas.js";
-import { t } from "../../i18n/index.js";
+import { getLocale, t } from "../../i18n/index.js";
 import { connect, show, type JsonOpt } from "../context.js";
 
 export function registerInfo(program: Command): void {
@@ -66,6 +66,17 @@ export function registerInfo(program: Command): void {
           t("cli.credits.remaining", { value: c.remaining }),
           t("cli.credits.perJob", { value: c.maxCreditsPerJob }),
           t("cli.credits.monthly", { value: c.monthlyCreditLimit }),
+          ...(c.flowBalance
+            ? [
+                t("cli.credits.flowBalance", {
+                  value: c.flowBalance.credits,
+                  time: new Date(c.flowBalance.readAt).toLocaleTimeString(getLocale(), {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                }),
+              ]
+            : []),
         ].join("\n"),
       );
     });

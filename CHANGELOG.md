@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.2] - 2026-10-06
+
+### Added
+
+- `flowpilot credits`, the `get_credits` MCP tool and `GET /credits` show the real Google Flow credit balance, read from Flow's account panel (`flowBalance`)
+- Every finished job reports the Google Flow balance left after the generation (`balance`)
+
 ## [0.1.1] - 2026-10-06
 
 ### Added

@@ -19,6 +19,8 @@ export const RATIO_ICON: Record<string, string> = {
 };
 
 export const CREDITS_RE = /use\s+(\d+)\s+credits?/i;
+/** Balance line of the account panel, e.g. "640 Google Flow credits". */
+export const BALANCE_RE = /([\d.,]+)\s+Google Flow credits?/i;
 export const PROJECT_LINK_CSS = 'a[href*="/project/"]';
 export const PROJECT_PATH_RE = /\/project\/([0-9a-f-]+)/i;
 export const OUTPUT_CHIP_RE = /^x[1-4]$/;
@@ -245,6 +247,18 @@ export const selectors = {
   cdkBackdrop: {
     describe: "Showing Angular CDK overlay backdrop",
     locate: (page) => page.locator(".cdk-overlay-backdrop-showing"),
+  },
+  accountButton: {
+    describe: 'Header button "Account details" (plan chip and avatar)',
+    locate: (page) => page.getByRole("button", { name: "Account details", exact: true }),
+  },
+  creditsDisplay: {
+    describe: 'Account panel row "Credits display" ("640 Google Flow credits")',
+    locate: (page) => page.locator('[aria-label="Credits display"]'),
+  },
+  accountPanelClose: {
+    describe: 'Account panel button "Close account panel"',
+    locate: (page) => page.getByRole("button", { name: "Close account panel", exact: true }),
   },
 } satisfies Record<string, SelectorDef>;
 

@@ -32,6 +32,7 @@ export default {
   "credits.remaining": "Remaining this month: {value}",
   "credits.perJob": "Per-job limit: {value}",
   "credits.monthly": "Monthly limit: {value}",
+  "credits.flowBalance": "Google Flow balance: {value} credits (read at {time})",
   "video.description": "Generate a video",
   "image.description": "Generate an image",
   "generate.promptOption": "Prompt text",

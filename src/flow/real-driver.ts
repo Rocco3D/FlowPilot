@@ -5,6 +5,7 @@ import { FlowPilotError } from "../core/errors.js";
 import { checkSpend, recordSpend } from "../core/credits.js";
 import { createLogger } from "../core/logger.js";
 import type {
+  FlowBalance,
   Job,
   JobResult,
   JobStatus,
@@ -13,6 +14,7 @@ import type {
   SessionStatus,
 } from "../core/schemas.js";
 import { t } from "../i18n/index.js";
+import { readBalance } from "./balance.js";
 import { clearComposer } from "./cleanup.js";
 import { downloadResult, writeSummary } from "./download.js";
 import type { FlowDriver } from "./driver.js";
@@ -29,6 +31,8 @@ const MODEL_CACHE_MS = 60 * 60_000;
 
 export class RealFlowDriver implements FlowDriver {
   private models: { at: number; list: ModelInfo[] } | undefined;
+  private lastBalance: FlowBalance | undefined;
+  private running = false;
 
   constructor(
     private readonly session: BrowserSession = new BrowserSession({
@@ -68,11 +72,37 @@ export class RealFlowDriver implements FlowDriver {
     return list;
   }
 
+  async balance(): Promise<FlowBalance | undefined> {
+    // Never touch the page while a job is using it.
+    if (this.running) return this.lastBalance;
+    const page = await this.session.page();
+    if (!/flow\.google\.com|labs\.google/.test(page.url())) await openHome(page);
+    return this.remember(await readBalance(page));
+  }
+
   async run(
     job: Job,
     onProgress?: (status: JobStatus) => void,
     onSpend?: (credits: number) => void,
-  ): Promise<{ results: JobResult[]; credits: number }> {
+  ): Promise<{ results: JobResult[]; credits: number; balance?: number }> {
+    this.running = true;
+    try {
+      return await this.runJob(job, onProgress, onSpend);
+    } finally {
+      this.running = false;
+    }
+  }
+
+  private remember(credits: number): FlowBalance {
+    this.lastBalance = { credits, readAt: new Date().toISOString() };
+    return this.lastBalance;
+  }
+
+  private async runJob(
+    job: Job,
+    onProgress?: (status: JobStatus) => void,
+    onSpend?: (credits: number) => void,
+  ): Promise<{ results: JobResult[]; credits: number; balance?: number }> {
     const request = job.request;
     const references = planReferences(request);
     assertFilesExist(references);
@@ -120,7 +150,11 @@ export class RealFlowDriver implements FlowDriver {
           ...(file.mediaId ? { mediaId: file.mediaId } : {}),
         });
       }
-      return { results, credits: cost };
+      // The balance is a bonus: a failed read never fails a finished job.
+      const balance = await readBalance(page)
+        .then((credits) => this.remember(credits).credits)
+        .catch(() => undefined);
+      return { results, credits: cost, ...(balance !== undefined ? { balance } : {}) };
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       throw new FlowPilotError(

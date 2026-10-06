@@ -143,6 +143,8 @@ Controlla il tuo consumo:
 flowpilot credits
 ```
 
+Il consumo e i limiti li conta FlowPilot. Lo stesso comando mostra anche il saldo reale dei tuoi crediti Google Flow, letto dal pannello dell'account di Flow. Mentre è in corso un job mostra l'ultimo saldo letto, senza toccare la pagina. Dopo ogni generazione, il risultato del job contiene il saldo rimasto (`balance`).
+
 ## Job e il servizio
 
 Una sola sessione Flow è in esecuzione alla volta. I job vengono eseguiti uno alla volta in una coda.

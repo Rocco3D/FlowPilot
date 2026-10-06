@@ -159,11 +159,14 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (is("GET", 1, "credits")) {
       const cfg = loadConfig(deps.configDir);
       const total = monthTotal(undefined, deps.dataDir);
+      // Reading Flow's balance can fail (Chrome closed, signed out); the local figures still answer.
+      const flowBalance = await driver.balance?.().catch(() => undefined);
       return send(res, 200, {
         monthTotal: total,
         maxCreditsPerJob: cfg.maxCreditsPerJob,
         monthlyCreditLimit: cfg.monthlyCreditLimit,
         remaining: cfg.monthlyCreditLimit - total,
+        ...(flowBalance ? { flowBalance } : {}),
       });
     }
     if (is("GET", 1, "config")) return send(res, 200, loadConfig(deps.configDir));
