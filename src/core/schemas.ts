@@ -75,12 +75,21 @@ export const ModelInfo = z.object({
 });
 export type ModelInfo = z.infer<typeof ModelInfo>;
 
+export const UpdateInfo = z.object({
+  installed: z.string(),
+  latest: z.string(),
+  message: z.string(),
+});
+export type UpdateInfo = z.infer<typeof UpdateInfo>;
+
 export const SessionStatus = z.object({
   chromeRunning: z.boolean(),
   connected: z.boolean(),
   signedIn: z.boolean(),
   profileDir: z.string().optional(),
   message: z.string(),
+  /** Present only when a newer FlowPilot version is on GitHub. */
+  update: UpdateInfo.optional(),
 });
 export type SessionStatus = z.infer<typeof SessionStatus>;
 

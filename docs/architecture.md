@@ -6,7 +6,7 @@ FlowPilot is a service that automates Google Flow interactions. Here is how it i
 
 - **src/cli**: The `flowpilot` command-line tool; talks to the service over the local HTTP API.
 - **src/server**: Local HTTP API with bearer token authentication; also hosts the MCP server over stdio that calls the HTTP API.
-- **src/core**: Service lifecycle, job store and serial queue, credit ledger and limits, config, paths, logger.
+- **src/core**: Service lifecycle, job store and serial queue, credit ledger and limits, config, paths, logger, update check (compares the installed version with `package.json` on GitHub's `main` branch).
 - **src/browser**: Chrome session management: sign-in in a plain Chrome window without remote debugging, then reopening the same profile with a debugging port and attaching over the Chrome DevTools Protocol.
 - **src/flow**: Everything that knows the Flow page; all DOM selectors live in `src/flow/selectors.ts`; self-test function.
 - **src/i18n**: All user-facing strings, translated to English and Italian.

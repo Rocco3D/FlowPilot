@@ -107,6 +107,15 @@ export const selectors = {
     locate: (page) =>
       page.locator("flow-prompt-box").getByRole("button", { name: "Agent", exact: true }),
   },
+  agentPanel: {
+    describe: "Agent chat side panel (flow-agent-panel); replaces flow-prompt-box while open",
+    locate: (page) => page.locator("flow-agent-panel"),
+  },
+  agentPanelClose: {
+    describe: 'Agent panel header button "Close"',
+    locate: (page) =>
+      page.locator("flow-agent-panel").getByRole("button", { name: "Close", exact: true }),
+  },
   loadingIndicator: {
     describe: "Any progressbar (page or card loading)",
     locate: (page) => page.getByRole("progressbar"),

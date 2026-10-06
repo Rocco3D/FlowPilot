@@ -34,6 +34,18 @@ npm link
 
 Dopo l'installazione, `flowpilot` è disponibile nel tuo terminale.
 
+### Aggiornamento
+
+`flowpilot doctor` (e lo strumento MCP `doctor`) ti avvisa quando su GitHub è disponibile una versione più recente. Per aggiornare, esegui di nuovo il comando di installazione:
+
+```bash
+npm install -g Rocco3D/FlowPilot
+```
+
+Dal codice sorgente, esegui `git pull`, poi `npm install`. In entrambi i casi, esegui poi `flowpilot service stop`: il comando `flowpilot` successivo avvia la nuova versione. Se usi FlowPilot da un assistente AI, riavvia anche l'assistente, così il suo server MCP usa la nuova versione.
+
+Ogni aggiornamento alza la versione di 0.0.1 (per esempio da 0.1.0 a 0.1.1). Le modifiche sono elencate in [CHANGELOG.md](CHANGELOG.md).
+
 ## Primo accesso
 
 Accedi con il tuo account Google:
@@ -48,14 +60,14 @@ Si apre una finestra di Chrome ordinaria dove puoi accedere con Google. Se Flow 
 flowpilot doctor
 ```
 
-Questo controlla che Chrome sia in esecuzione, che la connessione API funzioni e che tu sia collegato.
+Questo controlla che Chrome sia in esecuzione, che la connessione API funzioni e che tu sia collegato. Ti avvisa anche quando è disponibile una versione più recente di FlowPilot.
 
 ## Genera
 
 ### Generazione di immagini
 
 ```bash
-flowpilot image --prompt "Un paesaggio tranquillo al tramonto" --model "Nano Banana 2" --ratio 1:1
+flowpilot image --prompt "Un paesaggio tranquillo al tramonto" --model "Nano Banana 2.1" --ratio 1:1
 ```
 
 ### Generazione di video
@@ -107,7 +119,7 @@ Tutti i modelli video supportano l'audio.
 **Modelli di immagini:**
 
 - **Nano Banana Pro**: 0 crediti su Google AI Pro
-- **Nano Banana 2**: 0 crediti su Google AI Pro
+- **Nano Banana 2.1**: 0 crediti su Google AI Pro
 - **Nano Banana 2 Lite**: 0 crediti su Google AI Pro
 
 ### Elenco dei modelli disponibili
@@ -239,6 +251,10 @@ flowpilot selftest
 ```
 
 Questo controlla che l'interfaccia di Flow risponda e che i selettori siano corretti.
+
+### Modalità Agent di Flow
+
+FlowPilot usa la casella del prompt classica di Flow. Se in Flow è attiva la modalità Agent, o è aperto il suo pannello di chat a destra, FlowPilot chiude il pannello e spegne la modalità Agent prima di leggere i modelli o eseguire un job. Se non ci riesce, si ferma con l'errore `agent_mode_on`: spegni la modalità Agent in Flow e riprova.
 
 ### Se l'interfaccia di Flow cambia
 

@@ -34,6 +34,18 @@ npm link
 
 After installation, `flowpilot` is available in your terminal.
 
+### Update
+
+`flowpilot doctor` (and the `doctor` MCP tool) tells you when a newer version is available on GitHub. To update, run the install command again:
+
+```bash
+npm install -g Rocco3D/FlowPilot
+```
+
+From source, run `git pull`, then `npm install`. In both cases, run `flowpilot service stop` afterwards: the next `flowpilot` command starts the new version. If you use FlowPilot from an AI assistant, restart the assistant too, so that its MCP server runs the new version.
+
+Every update raises the version by 0.0.1 (for example 0.1.0 to 0.1.1). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
 ## First sign-in
 
 Sign in with your Google account:
@@ -48,14 +60,14 @@ This opens a plain Chrome window where you can sign in with Google. If Flow show
 flowpilot doctor
 ```
 
-This checks that Chrome is running, the API connection works, and you're signed in.
+This checks that Chrome is running, the API connection works, and you're signed in. It also tells you when a newer FlowPilot version is available.
 
 ## Generate
 
 ### Image generation
 
 ```bash
-flowpilot image --prompt "A serene landscape at sunset" --model "Nano Banana 2" --ratio 1:1
+flowpilot image --prompt "A serene landscape at sunset" --model "Nano Banana 2.1" --ratio 1:1
 ```
 
 ### Video generation
@@ -107,7 +119,7 @@ All video models support audio.
 **Image models:**
 
 - **Nano Banana Pro**: 0 credits on Google AI Pro
-- **Nano Banana 2**: 0 credits on Google AI Pro
+- **Nano Banana 2.1**: 0 credits on Google AI Pro
 - **Nano Banana 2 Lite**: 0 credits on Google AI Pro
 
 ### List available models
@@ -239,6 +251,10 @@ flowpilot selftest
 ```
 
 This checks that Flow's UI is responding and that selectors are correct.
+
+### Flow's Agent mode
+
+FlowPilot uses Flow's classic prompt box. If Flow's Agent mode is on, or its chat panel is open on the right, FlowPilot closes the panel and turns Agent mode off before reading models or running a job. If it cannot, it stops with the error `agent_mode_on`: turn Agent mode off in Flow and try again.
 
 ### If Flow's UI changes
 

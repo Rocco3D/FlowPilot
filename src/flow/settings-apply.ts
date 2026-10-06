@@ -34,6 +34,19 @@ export interface WantedSettings {
 
 /** Flow's "Agent" mode hides the classic settings popover; turn it off if it is on. */
 export async function ensureClassicComposer(page: Page): Promise<void> {
+  // The open Agent side panel replaces the composer (and its toggle): close it first.
+  const panel = selectors.agentPanel.locate(page).first();
+  if (await panel.isVisible().catch(() => false)) {
+    await clickRobust(selectors.agentPanelClose.locate(page).first());
+    await selectors.agentToggle
+      .locate(page)
+      .first()
+      .waitFor({ state: "visible", timeout: 5000 })
+      .catch(() => undefined);
+    if (await panel.isVisible().catch(() => false)) {
+      throw new FlowPilotError("agent_mode_on", "flow.gen.agentModeOn");
+    }
+  }
   const toggle = selectors.agentToggle.locate(page).first();
   const pressed = () => toggle.getAttribute("aria-pressed", { timeout: 1000 }).catch(() => null);
   if ((await pressed()) !== "true") return;

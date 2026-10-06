@@ -1,10 +1,12 @@
 import { startService } from "../core/service.js";
+import { checkForUpdate } from "../core/update.js";
 import { RealFlowDriver } from "../flow/real-driver.js";
 import { t } from "../i18n/index.js";
 
 try {
   const service = await startService({
     driver: new RealFlowDriver(),
+    checkUpdate: checkForUpdate,
     onExit: () => process.exit(0),
   });
   for (const signal of ["SIGINT", "SIGTERM"] as const) {

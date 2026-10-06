@@ -9,6 +9,7 @@ import { JobStore } from "./jobs.js";
 import { createLogger } from "./logger.js";
 import { dataDir as defaultDataDir } from "./paths.js";
 import { JobQueue, TERMINAL } from "./queue.js";
+import type { UpdateInfo } from "./schemas.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -21,6 +22,8 @@ export interface ServiceOptions {
   onExit?: () => void;
   /** Overrides `idleMinutes` (in milliseconds); for tests. */
   idleMs?: number;
+  /** Looks for a newer FlowPilot version; doctor reports it. */
+  checkUpdate?: (installed: string) => Promise<UpdateInfo | undefined>;
 }
 
 export interface RunningService {
@@ -104,6 +107,7 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
     configDir,
     dataDir,
     version,
+    ...(options.checkUpdate ? { checkUpdate: options.checkUpdate } : {}),
     logger,
     onShutdown: shutdown,
     onActivity: touch,

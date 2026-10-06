@@ -10,7 +10,7 @@ import { FlowPilotError } from "../core/errors.js";
 import type { Logger } from "../core/logger.js";
 import type { JobStore } from "../core/jobs.js";
 import type { JobQueue } from "../core/queue.js";
-import { JobRequest } from "../core/schemas.js";
+import { JobRequest, type UpdateInfo } from "../core/schemas.js";
 import { isAuthorized } from "./auth.js";
 
 export interface HttpDeps {
@@ -21,6 +21,8 @@ export interface HttpDeps {
   configDir?: string;
   dataDir?: string;
   version: string;
+  /** Looks for a newer FlowPilot version; doctor reports it. */
+  checkUpdate?: (installed: string) => Promise<UpdateInfo | undefined>;
   logger: Logger;
   /** Called after `POST /shutdown` has been answered. */
   onShutdown: () => void;
@@ -136,7 +138,13 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       throw new HttpError(401, "unauthorized", t("http.unauthorized"));
     }
 
-    if (is("POST", 1, "doctor")) return send(res, 200, await driver.doctor());
+    if (is("POST", 1, "doctor")) {
+      const [status, update] = await Promise.all([
+        driver.doctor(),
+        deps.checkUpdate?.(deps.version),
+      ]);
+      return send(res, 200, update ? { ...status, update } : status);
+    }
     if (is("POST", 1, "selftest")) return send(res, 200, await driver.selftest());
     if (is("GET", 1, "models")) return send(res, 200, await driver.listModels());
     if (is("POST", 1, "jobs")) {

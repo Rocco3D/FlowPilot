@@ -127,8 +127,12 @@ export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
     () => client.credits(),
   );
   tool("selftest", "Run the FlowPilot service self-test.", {}, () => client.selftest());
-  tool("doctor", "Check that Chrome is running and signed in to Google Flow.", {}, () =>
-    client.doctor(),
+  tool(
+    "doctor",
+    "Check that Chrome is running and signed in to Google Flow. When a newer FlowPilot version " +
+      "exists, the result has an `update` field: tell the user its message.",
+    {},
+    () => client.doctor(),
   );
 
   return server;

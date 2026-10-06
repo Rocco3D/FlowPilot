@@ -4,7 +4,22 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.1.1] - 2026-10-06
+
+### Added
+
+- `flowpilot doctor` and the `doctor` MCP tool tell the user when a newer FlowPilot version is available on GitHub
+
+### Fixed
+
+- Jobs, `flowpilot models` and `flowpilot selftest` no longer stop with `settings_not_open` when Flow's Agent chat panel is open: FlowPilot closes the panel first
+
+### Changed
+
+- Docs: Nano Banana 2.1 replaces Nano Banana 2, which Flow no longer offers
+- Docs: the HTTP API examples match the real responses
+
+## [0.1.0]
 
 ### Added
 
