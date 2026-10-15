@@ -239,6 +239,12 @@ describe("driver routes", () => {
 });
 
 describe("errors", () => {
+  it("answers with the translated message, not the key", async () => {
+    const res = await call("GET", "/nope");
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: { code: "not_found", message: "Not found" } });
+  });
+
   it("keeps FlowPilotError code and message", async () => {
     driver.doctorError = new FlowPilotError("chrome_not_found", "core.config.unknownKey", {
       key: "x",

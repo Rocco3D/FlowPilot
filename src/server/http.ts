@@ -52,9 +52,9 @@ class HttpError extends Error {
   }
 }
 
-const notFound = () => new HttpError(404, "not_found", t("http.notFound"));
+const notFound = () => new HttpError(404, "not_found", t("server.http.notFound"));
 const badRequest = (message: string) => new HttpError(400, "bad_request", message);
-const badHost = () => new HttpError(403, "bad_host", t("http.badHost"));
+const badHost = () => new HttpError(403, "bad_host", t("server.http.badHost"));
 
 /** Only the loopback names on the port the server actually listens on. */
 function isLocalHost(host: string | undefined, port: number): boolean {
@@ -73,14 +73,14 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
   let size = 0;
   for await (const chunk of req) {
     size += (chunk as Buffer).length;
-    if (size > MAX_BODY) throw new HttpError(413, "bad_request", t("http.bodyTooLarge"));
+    if (size > MAX_BODY) throw new HttpError(413, "bad_request", t("server.http.bodyTooLarge"));
     chunks.push(chunk as Buffer);
   }
   if (size === 0) return {};
   try {
     return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
   } catch {
-    throw badRequest(t("http.badJson"));
+    throw badRequest(t("server.http.badJson"));
   }
 }
 
@@ -149,7 +149,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (is("GET", 1, "health")) return send(res, 200, { ok: true, version: deps.version });
     deps.onActivity();
     if (!isAuthorized(req.headers.authorization, deps.token)) {
-      throw new HttpError(401, "unauthorized", t("http.unauthorized"));
+      throw new HttpError(401, "unauthorized", t("server.http.unauthorized"));
     }
 
     if (is("POST", 1, "doctor")) {
@@ -199,7 +199,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (is("GET", 1, "config")) return send(res, 200, loadConfig(deps.configDir));
     if (is("PUT", 2, "config")) {
       const body = (await readJson(req)) as { value?: unknown } | null;
-      if (typeof body?.value !== "string") throw badRequest(t("http.valueRequired"));
+      if (typeof body?.value !== "string") throw badRequest(t("server.http.valueRequired"));
       return send(res, 200, setConfigValue(b!, body.value, deps.configDir));
     }
     if (is("POST", 1, "shutdown")) {
