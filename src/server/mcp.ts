@@ -41,17 +41,30 @@ export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
   const server = new McpServer({ name: "flowpilot", version });
   let ready: Promise<void> | undefined;
 
+  const ensureRunning = async (): Promise<void> => {
+    ready ??= ensureServiceRunning(client);
+    await ready.catch((err: unknown) => {
+      ready = undefined;
+      throw err;
+    });
+  };
+
   const handle = async (fn: () => Promise<unknown>): Promise<ToolResult> => {
-    try {
-      ready ??= ensureServiceRunning(client);
-      await ready.catch((err: unknown) => {
-        ready = undefined;
-        throw err;
-      });
-      return ok(await fn());
-    } catch (err) {
-      if (err instanceof FlowPilotError) return fail(err.code, err.message);
-      return fail("internal_error", err instanceof Error ? err.message : String(err));
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        await ensureRunning();
+        return ok(await fn());
+      } catch (err) {
+        // The service can stop after a successful start, with an idle shutdown or `flowpilot service stop`. The
+        // memoised start is then stale, so drop it and try once: the next ensureRunning re-checks health and starts
+        // the service again instead of leaving the assistant mute until it is restarted.
+        if (attempt === 0 && err instanceof FlowPilotError && err.code === "service_unreachable") {
+          ready = undefined;
+          continue;
+        }
+        if (err instanceof FlowPilotError) return fail(err.code, err.message);
+        return fail("internal_error", err instanceof Error ? err.message : String(err));
+      }
     }
   };
 

@@ -1,6 +1,6 @@
 # MCP server
 
-`flowpilot mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. It lets AI assistants (Claude Code, Codex, Cursor, ...) generate videos and images through FlowPilot. It talks to the local HTTP API and starts the FlowPilot service automatically if it is not running.
+`flowpilot mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. It lets AI assistants (Claude Code, Codex, Cursor, ...) generate videos and images through FlowPilot. It talks to the local HTTP API and starts the FlowPilot service automatically if it is not running, including the case where it stopped after an earlier start (idle shutdown, `flowpilot service stop`).
 
 ## Credit warning
 
