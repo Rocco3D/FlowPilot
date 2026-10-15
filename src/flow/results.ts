@@ -17,11 +17,15 @@ export interface ResultItem {
   id: string;
   /** Position among the page's flow-video-tile elements when detected (videos only). */
   tileIndex?: number;
+  /** Flow's stable media id, when the result image carries it. */
+  mediaId?: string;
 }
 
 /** What the page tells about one `img` element. */
 export interface ImgInfo {
   src: string;
+  /** Flow's stable media id, null when the element has no `data-media-id`. */
+  mediaId: string | null;
   inVideoTile: boolean;
   inPromptBox: boolean;
   /** Class "thumbnail" or an alt text mentioning a thumbnail. */
@@ -45,9 +49,19 @@ function hashSrc(src: string): string {
   return h.toString(16);
 }
 
-/** Media id from `/image/<id>` or `?name=<id>` when present, else a stable hash of the src. */
-export const idFromSrc = (src: string) =>
-  FLOW_IMAGE_RE.exec(src)?.[1] ?? LEGACY_NAME_RE.exec(src)?.[1] ?? hashSrc(src);
+/**
+ * Identity of one result, in order of trust: the stable `data-media-id` attribute, then the id in
+ * `/image/<id>` or `?name=<id>`, then a stable hash of the src.
+ */
+export const resultId = (mediaId: string | null, src: string): string => {
+  const attr = mediaId?.trim();
+  return (
+    (attr ? attr : undefined) ??
+    FLOW_IMAGE_RE.exec(src)?.[1] ??
+    LEGACY_NAME_RE.exec(src)?.[1] ??
+    hashSrc(src)
+  );
+};
 
 /**
  * Tells which kind of result an `img` is, by structure. A finished video is the thumbnail inside
@@ -77,6 +91,7 @@ async function readResults(page: Page, type: JobType): Promise<ResultItem[]> {
       const tile = img.closest("flow-video-tile");
       return {
         src: img.src,
+        mediaId: img.getAttribute("data-media-id"),
         inVideoTile: tile !== null,
         inPromptBox: img.closest("flow-prompt-box") !== null,
         thumbnail: img.classList.contains("thumbnail") || /thumbnail/i.test(img.alt),
@@ -89,10 +104,15 @@ async function readResults(page: Page, type: JobType): Promise<ResultItem[]> {
   const items: ResultItem[] = [];
   for (const img of imgs) {
     if (classifyResultImg(img) !== type) continue;
-    const id = idFromSrc(img.src);
+    const id = resultId(img.mediaId, img.src);
     if (!seen.has(id)) {
       seen.add(id);
-      items.push({ src: img.src, id, ...(img.tileIndex >= 0 ? { tileIndex: img.tileIndex } : {}) });
+      items.push({
+        src: img.src,
+        id,
+        ...(img.tileIndex >= 0 ? { tileIndex: img.tileIndex } : {}),
+        ...(img.mediaId ? { mediaId: img.mediaId } : {}),
+      });
     }
   }
   return items;

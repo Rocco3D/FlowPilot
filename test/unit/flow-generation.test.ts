@@ -14,7 +14,7 @@ import {
   classifyChunks,
   classifyFailure,
   classifyResultImg,
-  idFromSrc,
+  resultId,
 } from "../../src/flow/results.js";
 import { diffSettings, optionNotAvailable } from "../../src/flow/settings-apply.js";
 import { setLocale } from "../../src/i18n/index.js";
@@ -24,6 +24,7 @@ describe("classifyResultImg", () => {
   const asb = "https://flow.google.com/asb/ANqvAbC123";
   const img = (src: string, over: Partial<Parameters<typeof classifyResultImg>[0]> = {}) => ({
     src,
+    mediaId: null,
     inVideoTile: false,
     inPromptBox: false,
     thumbnail: false,
@@ -59,15 +60,40 @@ describe("classifyResultImg", () => {
   });
 });
 
-describe("idFromSrc", () => {
-  it("uses the media id when the URL has one", () => {
-    expect(idFromSrc("https://flow-content.google/image/0a1b-22?x=1")).toBe("0a1b-22");
+describe("resultId", () => {
+  const signed =
+    "https://flow-content.google/image/37811907-d238-4928-9824-b1eed5de5a62?Expires=1792114851&KeyName=media&Signature=4WUvEuAi";
+  const asb = "https://flow.google.com/asb/ANqvLObVq_m7_NDhAbDwsGcmraBSIidkRh=s1600-rw";
+  const mediaId = "37811907-d238-4928-9824-b1eed5de5a62";
+
+  it("prefers the media id attribute over the src", () => {
+    expect(resultId("stable-id", signed)).toBe("stable-id");
+    expect(resultId("stable-id", asb)).toBe("stable-id");
   });
 
-  it("falls back to a stable hash", () => {
-    const src = "https://flow.google.com/asb/ANqvAbC123";
-    expect(idFromSrc(src)).toBe(idFromSrc(src));
-    expect(idFromSrc(src)).not.toBe(idFromSrc(`${src}4`));
+  it("gives the same id to the same result served from a different url", () => {
+    expect(resultId(mediaId, signed)).toBe(resultId(mediaId, asb));
+    expect(resultId(mediaId, asb)).toBe(mediaId);
+  });
+
+  it("falls back to the id in the url when the attribute is missing", () => {
+    const legacy = "https://labs.google/fx/api/trpc/media.getMediaUrlRedirect?name=abc-123";
+    expect(resultId(null, signed)).toBe(mediaId);
+    expect(resultId(null, legacy)).toBe("abc-123");
+  });
+
+  it("ignores a blank attribute", () => {
+    expect(resultId("", signed)).toBe(mediaId);
+    expect(resultId("   ", asb)).toBe(resultId(null, asb));
+  });
+
+  it("falls back to a stable hash only as a last resort", () => {
+    expect(resultId(null, asb)).toBe(resultId(null, asb));
+    expect(resultId(null, asb)).not.toBe(resultId(null, `${asb}4`));
+  });
+
+  it("keeps two different results with the same src apart", () => {
+    expect(resultId("a", asb)).not.toBe(resultId("b", asb));
   });
 });
 

@@ -9,9 +9,9 @@ import {
   EDIT_PATH_RE,
   GATED_TIER_RE,
   TIER_RE,
-  resultImage,
+  resultMedia,
   selectors,
-  tileBySrc,
+  tileByResult,
   tileDownloadItem,
   tileMoreOptions,
   tierItem,
@@ -56,7 +56,7 @@ export function extensionFor(type: JobType, contentType: string | undefined): st
 }
 
 async function openViewer(page: Page, item: ResultItem): Promise<string> {
-  await clickRobust(resultImage(page, item.src));
+  await clickRobust(resultMedia(page, item));
   await page.waitForURL(EDIT_PATH_RE, { timeout: 15000 }).catch(() => {
     throw new FlowPilotError("viewer_not_opened", "flow.download.viewerNotOpened");
   });
@@ -132,9 +132,12 @@ async function leaveViewer(page: Page): Promise<void> {
   await dismissOverlays(page);
 }
 
-/** Finds the result tile by thumbnail src; if Flow re-rendered it, by the recorded tile position. */
+/**
+ * Finds the result tile by its stable media id, with the src as fallback; if Flow re-rendered it,
+ * by the recorded tile position.
+ */
 async function findTile(page: Page, item: ResultItem): Promise<Locator> {
-  let tile = tileBySrc(page, item.src).first();
+  let tile = tileByResult(page, item).first();
   if ((await tile.count()) === 0) {
     if (item.tileIndex === undefined) {
       throw new FlowPilotError("download_no_source", "flow.download.noSource");
