@@ -65,9 +65,9 @@ export function createMcpServer(
         await ensureRunning();
         return ok(await fn());
       } catch (err) {
-        // The service can stop after a successful start, with an idle shutdown or `flowpilot service stop`. The
-        // memoised start is then stale, so drop it and try once: the next ensureRunning re-checks health and starts
-        // the service again instead of leaving the assistant mute until it is restarted.
+        // The service can stop on its own, with an idle shutdown or `flowpilot service stop`. The memoised start
+        // is then stale, so drop it and try once: the next ensureRunning re-checks health and starts the service
+        // again.
         if (attempt === 0 && err instanceof FlowPilotError && err.code === "service_unreachable") {
           ready = undefined;
           continue;
