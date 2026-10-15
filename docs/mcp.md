@@ -22,6 +22,8 @@ Videos spend your Google Flow credits (Veo 3.1 Lite 10, Fast 20, Quality 100, Om
 
 With `wait` true the generation tools poll every 3 seconds, for up to 30 minutes, until the job ends, and return the job with the result file paths and the Google Flow balance left (`balance`). With `wait` false they return the job id and status. Errors are returned as MCP tool errors in the form `code: message`.
 
+`list_models`, `get_credits`, `selftest` and `doctor` take no parameters and accept a call with no `arguments` at all, as the protocol allows, as well as an empty object. Tools that have parameters require them.
+
 ## Configuration
 
 Claude Code:

@@ -41,27 +41,39 @@ export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
   const server = new McpServer({ name: "flowpilot", version });
   let ready: Promise<void> | undefined;
 
+  const handle = async (fn: () => Promise<unknown>): Promise<ToolResult> => {
+    try {
+      ready ??= ensureServiceRunning(client);
+      await ready.catch((err: unknown) => {
+        ready = undefined;
+        throw err;
+      });
+      return ok(await fn());
+    } catch (err) {
+      if (err instanceof FlowPilotError) return fail(err.code, err.message);
+      return fail("internal_error", err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const tool = <S extends z.ZodRawShape>(
     name: string,
     description: string,
     shape: S,
     fn: (args: z.infer<z.ZodObject<S>>) => Promise<unknown>,
   ): void => {
-    server.registerTool(name, { description, inputSchema: shape }, (async (
+    server.registerTool(name, { description, inputSchema: shape }, ((
       args: z.infer<z.ZodObject<S>>,
-    ) => {
-      try {
-        ready ??= ensureServiceRunning(client);
-        await ready.catch((err: unknown) => {
-          ready = undefined;
-          throw err;
-        });
-        return ok(await fn(args));
-      } catch (err) {
-        if (err instanceof FlowPilotError) return fail(err.code, err.message);
-        return fail("internal_error", err instanceof Error ? err.message : String(err));
-      }
-    }) as never);
+    ) => handle(() => fn(args))) as never);
+  };
+
+  /**
+   * A tool without parameters. The protocol lets a client omit `arguments`, which an object schema rejects, so the
+   * schema is made optional: the published schema stays an empty object and both `{}` and a missing `arguments`
+   * are accepted. Wrapping the tools that have parameters would strip `properties` from what clients see.
+   */
+  const toolNoArgs = (name: string, description: string, fn: () => Promise<unknown>): void => {
+    server.registerTool(name, { description, inputSchema: z.object({}).optional() }, (() =>
+      handle(fn)) as never);
   };
 
   const finish = async (job: Job, wait: boolean): Promise<unknown> => {
@@ -114,25 +126,22 @@ export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
     idShape,
     ({ id }) => client.cancelJob(id),
   );
-  tool(
+  toolNoArgs(
     "list_models",
     `List the available models with ratios, durations and credit costs. ${COSTS}`,
-    {},
     () => client.models(),
   );
-  tool(
+  toolNoArgs(
     "get_credits",
     "Show the Google Flow credits spent this month through FlowPilot, the remaining credits and the " +
       "configured limits. `flowBalance.credits` is the real balance of the Google Flow account, read from Flow.",
-    {},
     () => client.credits(),
   );
-  tool("selftest", "Run the FlowPilot service self-test.", {}, () => client.selftest());
-  tool(
+  toolNoArgs("selftest", "Run the FlowPilot service self-test.", () => client.selftest());
+  toolNoArgs(
     "doctor",
     "Check that Chrome is running and signed in to Google Flow. When a newer FlowPilot version " +
       "exists, the result has an `update` field: tell the user its message.",
-    {},
     () => client.doctor(),
   );
 

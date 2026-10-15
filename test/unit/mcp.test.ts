@@ -41,6 +41,10 @@ function handle(req: http.IncomingMessage, res: http.ServerResponse, raw: string
   const method = req.method ?? "";
   if (url === "/health") return reply(res, 200, { ok: true, version: "0.0.0-test" });
   if (url === "/models") return reply(res, 200, [{ name: "Nano Banana" }]);
+  if (url === "/credits") return reply(res, 200, { monthTotal: 0, remaining: 1000 });
+  if (url === "/selftest" && method === "POST") return reply(res, 200, { ok: true, checks: [] });
+  if (url === "/doctor" && method === "POST")
+    return reply(res, 200, { chromeRunning: true, connected: true });
   if (url === "/jobs" && method === "POST") {
     posted = JSON.parse(raw);
     return reply(res, 201, { ...baseJob, status: "queued" });
@@ -59,6 +63,13 @@ function handle(req: http.IncomingMessage, res: http.ServerResponse, raw: string
 
 async function call(name: string, args: Record<string, unknown> = {}) {
   const res = await mcp.callTool({ name, arguments: args });
+  const text = (res.content as { text: string }[])[0]?.text ?? "";
+  return { isError: res.isError, text };
+}
+
+/** Calls a tool the way a client that omits `arguments` does. */
+async function callWithoutArguments(name: string) {
+  const res = await mcp.callTool({ name, arguments: undefined });
   const text = (res.content as { text: string }[])[0]?.text ?? "";
   return { isError: res.isError, text };
 }
@@ -120,5 +131,25 @@ describe("mcp server", () => {
     const { isError, text } = await call("get_job", { id: "nope" });
     expect(isError).toBe(true);
     expect(text).toBe("not_found: No such job");
+  });
+
+  it("accepts tools without parameters when arguments is omitted", async () => {
+    for (const name of ["list_models", "get_credits", "selftest", "doctor"]) {
+      const { isError, text } = await callWithoutArguments(name);
+      expect(isError, `${name}: ${text}`).toBeFalsy();
+      expect(() => JSON.parse(text)).not.toThrow();
+    }
+  });
+
+  it("keeps the parameters of the tools that have some", async () => {
+    const { tools } = await mcp.listTools();
+    const jobs = tools.find((t) => t.name === "list_jobs")?.inputSchema as {
+      properties?: Record<string, unknown>;
+    };
+    expect(Object.keys(jobs?.properties ?? {})).toEqual(["limit"]);
+    const model = tools.find((t) => t.name === "get_job")?.inputSchema as {
+      required?: string[];
+    };
+    expect(model?.required).toEqual(["id"]);
   });
 });
