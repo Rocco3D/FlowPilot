@@ -20,7 +20,7 @@ Videos spend your Google Flow credits (Veo 3.1 Lite 10, Fast 20, Quality 100, Om
 | `selftest`       | Runs the service self-test.                                                                                                                                                                                                                                               |
 | `doctor`         | Checks Chrome and the Google Flow session. When a newer FlowPilot version is on GitHub, the result has an `update` field with a message for the user.                                                                                                                     |
 
-With `wait` true the generation tools poll every 3 seconds, for up to 30 minutes, until the job ends, and return the job with the result file paths and the Google Flow balance left (`balance`). With `wait` false they return the job id and status. Errors are returned as MCP tool errors in the form `code: message`.
+With `wait` true the generation tools poll every 3 seconds, for at most 45 seconds, until the job ends, and return the job with the result file paths and the Google Flow balance left (`balance`). If the job is still running they return `{ still_running: true, id, status, hint }` and no error: nothing has failed, the job keeps running in the service, so call `get_job` again rather than generating it a second time. With `wait` false they return the job id and status. Errors are returned as MCP tool errors in the form `code: message`.
 
 `list_models`, `get_credits`, `selftest` and `doctor` take no parameters and accept a call with no `arguments` at all, as the protocol allows, as well as an empty object. Tools that have parameters require them.
 

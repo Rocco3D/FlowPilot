@@ -10,7 +10,12 @@ import { JobRequest, type Job } from "../core/schemas.js";
 const { version } = createRequire(import.meta.url)("../../package.json") as { version: string };
 
 const POLL_MS = 3000;
-const MAX_WAIT_MS = 30 * 60 * 1000;
+/**
+ * Clients give up on a tool call well before a long generation ends, and the job keeps running in the service, so
+ * holding the call risks the assistant reading a timeout as a failure and paying for the same work twice. A call that
+ * reaches this limit answers `still_running` instead of an error, and the assistant asks again.
+ */
+const MAX_WAIT_MS = 45_000;
 const TERMINAL = new Set(["done", "failed", "cancelled", "interrupted"]);
 
 const COSTS =
@@ -20,8 +25,9 @@ const COSTS =
 const CONFIRM =
   "Always confirm with the user before generating a video, because it spends credits.";
 const WAIT =
-  "wait (default true) polls until the job finishes (up to 30 minutes) and returns the result file paths; " +
-  "with wait=false only the job id is returned.";
+  `wait (default true) polls until the job finishes, for at most ${MAX_WAIT_MS / 1000} seconds, and returns the ` +
+  "result file paths; if the job is still running it returns { still_running: true, id, status } with no error, " +
+  "because the job is still going: call get_job in a minute, or pass wait=false to only get the job id back.";
 
 const common = JobRequest.omit({ type: true, maxCredits: true }).shape;
 const generateShape = { ...common, wait: z.boolean().default(true) };
@@ -37,7 +43,11 @@ const fail = (code: string, message: string): ToolResult => ({
   isError: true,
 });
 
-export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
+export function createMcpServer(
+  client: Client,
+  pollMs = POLL_MS,
+  maxWaitMs = MAX_WAIT_MS,
+): McpServer {
   const server = new McpServer({ name: "flowpilot", version });
   let ready: Promise<void> | undefined;
 
@@ -91,12 +101,17 @@ export function createMcpServer(client: Client, pollMs = POLL_MS): McpServer {
 
   const finish = async (job: Job, wait: boolean): Promise<unknown> => {
     if (!wait) return { id: job.id, status: job.status };
-    const deadline = Date.now() + MAX_WAIT_MS;
+    const deadline = Date.now() + maxWaitMs;
     while (!TERMINAL.has(job.status)) {
       if (Date.now() > deadline) {
-        throw new FlowPilotError("wait_timeout", "cli.error.server", {
-          message: `Job ${job.id} is still ${job.status} after 30 minutes. Use get_job to check it later.`,
-        });
+        // Nothing failed: the job is still running in the service and will finish on its own. Saying so, instead of
+        // reporting a timeout, keeps the assistant from paying for the same generation twice.
+        return {
+          still_running: true,
+          id: job.id,
+          status: job.status,
+          hint: `Job ${job.id} is still ${job.status} and keeps running in FlowPilot. Call get_job with id "${job.id}" in about a minute to read the result file paths, and do not generate it again: this work is not lost and costs nothing to repeat.`,
+        };
       }
       await new Promise((r) => setTimeout(r, pollMs));
       job = await client.getJob(job.id);

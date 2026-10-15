@@ -27,6 +27,8 @@ const baseJob = {
 };
 
 let polls = 0;
+/** When true the fake job never finishes, to exercise the wait limit. */
+let stall = false;
 let posted: unknown;
 let server: http.Server;
 let mcp: McpClient;
@@ -50,6 +52,7 @@ function handle(req: http.IncomingMessage, res: http.ServerResponse, raw: string
     return reply(res, 201, { ...baseJob, status: "queued" });
   }
   if (url === "/jobs/j1") {
+    if (stall) return reply(res, 200, { ...baseJob, status: "running" });
     return reply(
       res,
       200,
@@ -90,7 +93,7 @@ beforeAll(async () => {
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as AddressInfo).port;
   const [a, b] = InMemoryTransport.createLinkedPair();
-  await createMcpServer(new Client(port), 5).connect(b);
+  await createMcpServer(new Client(port), 5, 40).connect(b);
   mcp = new McpClient({ name: "test", version: "0" });
   await mcp.connect(a);
 });
@@ -125,6 +128,21 @@ describe("mcp server", () => {
   it("generate_image with wait=false returns the job id", async () => {
     const { text } = await call("generate_image", { prompt: "a cat", wait: false });
     expect(JSON.parse(text)).toEqual({ id: "j1", status: "queued" });
+  });
+
+  it("answers still_running when the job is not finished yet", async () => {
+    stall = true;
+    try {
+      const { isError, text } = await call("generate_video", { prompt: "a cat" });
+      const body = JSON.parse(text);
+      expect(isError).toBeFalsy();
+      expect(body.still_running).toBe(true);
+      expect(body.id).toBe("j1");
+      expect(body.status).toBe("running");
+      expect(body.hint).toContain("get_job");
+    } finally {
+      stall = false;
+    }
   });
 
   it("maps FlowPilot errors to tool errors", async () => {
