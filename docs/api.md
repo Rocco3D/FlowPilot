@@ -218,8 +218,8 @@ Provide a JSON object with the following fields (from `JobRequest`):
 - `project` (string, optional): Project identifier
 - `outDir` (string, optional): Output directory path. Defaults to the configured output folder.
 - `upscale` (string, optional): Upscale quality ("1080p" or "4k")
-- `maxCredits` (integer, optional): Per-job credit limit for this job, instead of `maxCreditsPerJob`
-- `confirm` (boolean, optional): `true` lets this job exceed the per-job and monthly credit limits
+- `maxCredits` (integer, optional): Per-job credit limit for this job; it can only lower `maxCreditsPerJob`, never raise it (raise it with `confirm`)
+- `confirm` (boolean, optional): `true` lets this job exceed both the per-job and monthly credit limits, whatever `maxCredits` says
 
 **Response (201):**
 

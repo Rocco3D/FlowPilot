@@ -49,7 +49,9 @@ export default {
   "generate.projectOption": "Flow project name",
   "generate.outOption": "Output directory",
   "generate.upscaleOption": "Upscale to 1080p or 4k",
-  "generate.maxCreditsOption": "Refuse to run if the job costs more credits than this",
+  "generate.maxCreditsOption":
+    "Refuse to run if the job costs more credits than this (it can only lower the configured limit)",
+  "generate.confirmOption": "Allow the job to exceed the credit limits",
   "generate.waitOption": "Wait for the job to finish",
   "generate.noWaitOption": "Print the job id and return immediately",
   "generate.promptExactlyOne": "Provide exactly one of --prompt and --prompt-file",

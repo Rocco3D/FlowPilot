@@ -101,7 +101,8 @@ flowpilot video --prompt "A flowing waterfall" --model "Omni 1.1 Flash" --resolu
 - `--json`: Output JSON instead of human-readable text
 - `--out ~/Downloads`: Save results to a custom folder (default: configured output folder)
 - `--upscale 4k`: Upscale the result (1080p or 4k)
-- `--max-credits 50`: Per-job credit limit (overridden by `--confirm`)
+- `--max-credits 10`: Lower the per-job credit limit for this run (it can never raise it)
+- `--confirm`: Allow the job to exceed the per-job and monthly credit limits
 
 ## Models and credits
 

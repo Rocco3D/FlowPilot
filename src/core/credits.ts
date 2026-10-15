@@ -56,6 +56,14 @@ export function monthTotal(date: Date = new Date(), dir?: string): number {
     .reduce((sum, e) => sum + e.credits, 0);
 }
 
+/**
+ * A per-job limit can only lower the configured one. Raising it past what the user configured needs
+ * `confirm`, so a limit typed on the command line is never a way around the limit in `config.json`.
+ */
+export function jobLimit(configured: number, requested?: number): number {
+  return requested === undefined ? configured : Math.min(requested, configured);
+}
+
 export function checkSpend(
   cost: number,
   { maxCreditsPerJob, monthlyCreditLimit, confirm = false, date, dir }: SpendLimits,

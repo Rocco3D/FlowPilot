@@ -101,7 +101,8 @@ flowpilot video --prompt "Una cascata che scorre" --model "Omni 1.1 Flash" --res
 - `--json`: Restituisci JSON invece di testo leggibile
 - `--out ~/Downloads`: Salva i risultati in una cartella personalizzata (default: cartella output configurata)
 - `--upscale 4k`: Aumenta la risoluzione del risultato (1080p o 4k)
-- `--max-credits 50`: Limite di crediti per job (sorpassato da `--confirm`)
+- `--max-credits 10`: Abbassa il limite di crediti per job di questa esecuzione (non può mai aumentarlo)
+- `--confirm`: Consenti al job di superare i limiti per job e mensile
 
 ## Modelli e crediti
 

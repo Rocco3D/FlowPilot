@@ -2,7 +2,7 @@ import type { Page } from "playwright-core";
 import { BrowserSession } from "../browser/session.js";
 import { loadConfig } from "../core/config.js";
 import { FlowPilotError } from "../core/errors.js";
-import { checkSpend, recordSpend } from "../core/credits.js";
+import { checkSpend, jobLimit, recordSpend } from "../core/credits.js";
 import { createLogger } from "../core/logger.js";
 import type {
   FlowBalance,
@@ -114,7 +114,7 @@ export class RealFlowDriver implements FlowDriver {
 
     const { cost, model } = await applySettings(page, request);
     checkSpend(cost, {
-      maxCreditsPerJob: request.maxCredits ?? config.maxCreditsPerJob,
+      maxCreditsPerJob: jobLimit(config.maxCreditsPerJob, request.maxCredits),
       monthlyCreditLimit: config.monthlyCreditLimit,
       ...(request.confirm ? { confirm: true } : {}),
     });

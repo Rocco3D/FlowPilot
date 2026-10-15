@@ -189,6 +189,17 @@ describe("cli generation", () => {
     expect(out.at(-1)).toBe("/out/a.mp4");
   });
 
+  it("--confirm and --max-credits reach the job request, and confirm stays absent otherwise", async () => {
+    await cli("video", "--prompt", "hi", "--confirm", "--max-credits", "50", "--no-wait");
+    expect(seen.find((s) => s.method === "POST")?.body).toMatchObject({
+      confirm: true,
+      maxCredits: 50,
+    });
+    seen.length = 0;
+    await cli("image", "--prompt", "hi", "--no-wait");
+    expect(seen.find((s) => s.method === "POST")?.body).not.toHaveProperty("confirm");
+  });
+
   it("a failed job exits with 1 and reports the error on stderr", async () => {
     finalStatus = "failed";
     const code = await cli("video", "--prompt", "hi");

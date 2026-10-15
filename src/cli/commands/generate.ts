@@ -22,6 +22,7 @@ interface GenerateOpts extends JsonOpt {
   out?: string;
   upscale?: "1080p" | "4k";
   maxCredits?: number;
+  confirm?: boolean;
   wait: boolean;
 }
 
@@ -71,6 +72,7 @@ function buildRequest(type: JobType, opts: GenerateOpts): JobRequest {
     outDir: absolute(opts.out),
     upscale: opts.upscale,
     maxCredits: opts.maxCredits,
+    confirm: opts.confirm,
   };
 }
 
@@ -117,6 +119,7 @@ function register(program: Command, type: JobType, ctx: Ctx): void {
     .option("--out <dir>", t("cli.generate.outOption"))
     .option("--upscale <resolution>", t("cli.generate.upscaleOption"))
     .option("--max-credits <n>", t("cli.generate.maxCreditsOption"), number)
+    .option("--confirm", t("cli.generate.confirmOption"))
     .addOption(new Option("--wait", t("cli.generate.waitOption")).default(true))
     .option("--no-wait", t("cli.generate.noWaitOption"))
     .option("--json", t("cli.jsonOption"))

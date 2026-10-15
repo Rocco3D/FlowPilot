@@ -1,7 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { checkSpend, monthTotal, readLedger, recordSpend } from "../../src/core/credits.js";
+import {
+  checkSpend,
+  jobLimit,
+  monthTotal,
+  readLedger,
+  recordSpend,
+} from "../../src/core/credits.js";
 import { FlowPilotError } from "../../src/core/errors.js";
 import { t, setLocale } from "../../src/i18n/index.js";
 
@@ -46,6 +52,14 @@ describe("credits ledger", () => {
     recordSpend(entry(100, new Date(2026, 3, 28, 12)), dir);
     recordSpend(entry(100, new Date(2025, 4, 15, 12)), dir);
     expect(monthTotal(new Date(2026, 4, 15), dir)).toBe(12);
+  });
+
+  it("lets a per-job limit only lower the configured one", () => {
+    expect(jobLimit(20)).toBe(20);
+    expect(jobLimit(20, 10)).toBe(10);
+    expect(jobLimit(20, 20)).toBe(20);
+    expect(jobLimit(20, 50)).toBe(20);
+    expect(jobLimit(20, 0)).toBe(0);
   });
 
   it("enforces the per-job and monthly limits, and confirm bypasses them", () => {
