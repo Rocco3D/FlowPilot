@@ -203,9 +203,9 @@ flowpilot config set outputDir ~/Videos # Change a setting
 | Key                  | Default               | Meaning                                           |
 | -------------------- | --------------------- | ------------------------------------------------- |
 | `outputDir`          | `Documents\FlowPilot` | Where to save generated files                     |
-| `defaultVideoModel`  | (auto)                | Default model for `flowpilot video`               |
-| `defaultImageModel`  | (auto)                | Default model for `flowpilot image`               |
-| `outputs`            | 1                     | Number of outputs per job (1–4)                   |
+| `defaultVideoModel`  | (auto)                | Model for video jobs without `--model`            |
+| `defaultImageModel`  | (auto)                | Model for image jobs without `--model`            |
+| `outputs`            | 1                     | Outputs per job when none is requested (1–4)      |
 | `maxCreditsPerJob`   | 20                    | Per-job credit limit                              |
 | `monthlyCreditLimit` | 1000                  | Monthly credit budget                             |
 | `locale`             | (auto)                | Language: `en` or `it`; auto-detect from system   |
@@ -215,7 +215,9 @@ flowpilot config set outputDir ~/Videos # Change a setting
 | `idleMinutes`        | 30                    | Minutes before the service auto-stops (0 = never) |
 | `showBrowser`        | false                 | Show the automation window (normally off-screen)  |
 
-Changes to `idleMinutes` and `showBrowser` take effect the next time the service starts (after `flowpilot stop` or an idle shutdown).
+With no `defaultVideoModel` or `defaultImageModel` the model already selected in Flow is used.
+
+Changes to `idleMinutes`, `showBrowser` and `locale` take effect the next time the service starts (after `flowpilot stop` or an idle shutdown). `defaultVideoModel`, `defaultImageModel` and `outputs` are read every time a job is created.
 
 ## Languages
 
@@ -226,6 +228,8 @@ The interface language is chosen from:
 1. `flowpilot config set locale en` or `locale it`
 2. Environment variable: `FLOWPILOT_LANG=en` or `FLOWPILOT_LANG=it`
 3. System language (if Italian, uses Italian; otherwise English)
+
+The first one wins: `FLOWPILOT_LANG` is used only when `locale` is not set. Values other than `en` and `it` are ignored rather than reported. It covers the CLI and the error messages the service returns over the HTTP API; log files stay in English.
 
 ## Use from other apps
 

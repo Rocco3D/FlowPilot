@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Option, type Command } from "commander";
 import { FlowPilotError } from "../../core/errors.js";
-import type { Job, JobRequest, JobType } from "../../core/schemas.js";
+import type { Job, JobRequestInput, JobType } from "../../core/schemas.js";
 import { t } from "../../i18n/index.js";
 import { connect, show, type Ctx, type JsonOpt } from "../context.js";
 
@@ -54,7 +54,7 @@ function readPrompt(opts: GenerateOpts): string {
   }
 }
 
-function buildRequest(type: JobType, opts: GenerateOpts): JobRequest {
+function buildRequest(type: JobType, opts: GenerateOpts): JobRequestInput {
   const video = type === "video";
   return {
     type,
@@ -63,7 +63,7 @@ function buildRequest(type: JobType, opts: GenerateOpts): JobRequest {
     ratio: opts.ratio,
     duration: video ? opts.duration : undefined,
     resolution: video ? opts.resolution : undefined,
-    outputs: opts.outputs ?? 1,
+    outputs: opts.outputs,
     startFrame: absolute(opts.startFrame),
     endFrame: video ? absolute(opts.endFrame) : undefined,
     ingredients: opts.ingredient?.map((p) => path.resolve(p)),

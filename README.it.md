@@ -203,9 +203,9 @@ flowpilot config set outputDir ~/Video  # Cambia un'impostazione
 | Chiave               | Default               | Significato                                                                  |
 | -------------------- | --------------------- | ---------------------------------------------------------------------------- |
 | `outputDir`          | `Documents\FlowPilot` | Dove salvare i file generati                                                 |
-| `defaultVideoModel`  | (auto)                | Modello default per `flowpilot video`                                        |
-| `defaultImageModel`  | (auto)                | Modello default per `flowpilot image`                                        |
-| `outputs`            | 1                     | Numero di output per job (1–4)                                               |
+| `defaultVideoModel`  | (auto)                | Modello per i job video senza `--model`                                      |
+| `defaultImageModel`  | (auto)                | Modello per i job image senza `--model`                                      |
+| `outputs`            | 1                     | Output per job quando non ne sono richiesti (1–4)                            |
 | `maxCreditsPerJob`   | 20                    | Limite di crediti per job                                                    |
 | `monthlyCreditLimit` | 1000                  | Budget mensile di crediti                                                    |
 | `locale`             | (auto)                | Lingua: `en` o `it`; rilevamento automatico dal sistema                      |
@@ -215,7 +215,7 @@ flowpilot config set outputDir ~/Video  # Cambia un'impostazione
 | `idleMinutes`        | 30                    | Minuti prima che il servizio si fermi automaticamente (0 = mai)              |
 | `showBrowser`        | false                 | Mostra la finestra di automazione (normalmente fuori schermo)                |
 
-Le modifiche a `idleMinutes` e `showBrowser` valgono dal prossimo avvio del servizio (dopo `flowpilot stop` o una chiusura automatica).
+Le modifiche a `idleMinutes`, `showBrowser` e `locale` valgono dal prossimo avvio del servizio (dopo `flowpilot stop` o una chiusura automatica). `defaultVideoModel`, `defaultImageModel` e `outputs` vengono lette a ogni job creato.
 
 ## Lingue
 
@@ -226,6 +226,8 @@ La lingua dell'interfaccia è scelta da:
 1. `flowpilot config set locale en` oppure `locale it`
 2. Variabile d'ambiente: `FLOWPILOT_LANG=en` oppure `FLOWPILOT_LANG=it`
 3. Lingua del sistema (se italiano, usa l'italiano; altrimenti inglese)
+
+Vince la prima: `FLOWPILOT_LANG` viene usata solo se `locale` non è impostata. Valori diversi da `en` e `it` vengono ignorati, non segnalati come errori. Vale per la CLI e per i messaggi di errore che il servizio restituisce via API HTTP; i file di log restano in inglese.
 
 ## Usa da altre app
 

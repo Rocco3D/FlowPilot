@@ -30,7 +30,13 @@ const WAIT =
   "because the job is still going: call get_job in a minute, or pass wait=false to only get the job id back.";
 
 const common = JobRequest.omit({ type: true, maxCredits: true }).shape;
-const generateShape = { ...common, wait: z.boolean().default(true) };
+// `outputs` loses the schema default on purpose: the SDK fills defaults in before we see the arguments, and a filled
+// in 1 would hide the configured `outputs` from the service.
+const generateShape = {
+  ...common,
+  outputs: z.number().int().min(1).max(4).optional(),
+  wait: z.boolean().default(true),
+};
 
 type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
 

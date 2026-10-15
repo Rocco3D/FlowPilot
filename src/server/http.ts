@@ -162,9 +162,22 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (is("POST", 1, "selftest")) return send(res, 200, await driver.selftest());
     if (is("GET", 1, "models")) return send(res, 200, await driver.listModels());
     if (is("POST", 1, "jobs")) {
-      const body = JobRequest.parse(await readJson(req));
-      const outDir = body.outDir ?? loadConfig(deps.configDir).outputDir;
-      return send(res, 201, queue.enqueue({ ...body, outDir }));
+      const raw = (await readJson(req)) as { outputs?: number };
+      const body = JobRequest.parse(raw);
+      const cfg = loadConfig(deps.configDir);
+      // What the request leaves out comes from the configuration; `raw` is read too because the schema has already
+      // filled `outputs` by the time the body is parsed.
+      return send(
+        res,
+        201,
+        queue.enqueue({
+          ...body,
+          model:
+            body.model ?? (body.type === "video" ? cfg.defaultVideoModel : cfg.defaultImageModel),
+          outputs: raw.outputs ?? cfg.outputs,
+          outDir: body.outDir ?? cfg.outputDir,
+        }),
+      );
     }
     if (is("GET", 1, "jobs")) return send(res, 200, store.list());
     if (is("GET", 2, "jobs")) return send(res, 200, requireJob(b!));

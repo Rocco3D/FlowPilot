@@ -206,11 +206,11 @@ Provide a JSON object with the following fields (from `JobRequest`):
 
 - `type` (string, required): "video" or "image"
 - `prompt` (string, required): Generation prompt (non-empty)
-- `model` (string, optional): Model name as listed by `GET /models` (e.g., "Nano Banana 2.1"). If omitted, the model currently selected in Flow is used.
+- `model` (string, optional): Model name as listed by `GET /models` (e.g., "Nano Banana 2.1"). If omitted, `defaultVideoModel` or `defaultImageModel` from the configuration is used; with neither set, the model currently selected in Flow is used.
 - `ratio` (string, optional): Aspect ratio (e.g., "16:9", "1:1", "9:16")
 - `duration` (integer, optional): Video duration in seconds (videos only)
 - `resolution` (string, optional): Resolution, when Flow offers a choice (e.g., "720p" for Omni)
-- `outputs` (integer, optional): Number of outputs to generate (1–4, defaults to 1)
+- `outputs` (integer, optional): Number of outputs to generate (1–4). Defaults to the configured `outputs` (1), so a job that leaves it out follows `config.json`
 - `startFrame` (string, optional): Path to a starting frame image
 - `endFrame` (string, optional): Path to an ending frame image
 - `ingredients` (array of strings, optional): Reference images or media

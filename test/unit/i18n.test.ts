@@ -28,4 +28,16 @@ describe("i18n", () => {
     process.env.FLOWPILOT_LANG = "xx";
     expect(getLocale()).toBe("en");
   });
+
+  it("lets the configured locale win over the environment", () => {
+    process.env.FLOWPILOT_LANG = "en";
+    setLocale("it");
+    expect(getLocale()).toBe("it");
+  });
+
+  it("ignores a configured locale it does not have", () => {
+    process.env.FLOWPILOT_LANG = "en";
+    setLocale("fr");
+    expect(getLocale()).toBe("en");
+  });
 });

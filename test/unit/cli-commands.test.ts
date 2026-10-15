@@ -178,6 +178,14 @@ describe("cli generation", () => {
     expect(seen.some((s) => s.url === "/jobs/j1")).toBe(false);
   });
 
+  it("sends outputs only when the flag is given", async () => {
+    await cli("image", "--prompt", "hi", "--no-wait");
+    expect(seen.find((s) => s.method === "POST")?.body).not.toHaveProperty("outputs");
+    seen.length = 0;
+    await cli("image", "--prompt", "hi", "--outputs", "2", "--no-wait");
+    expect(seen.find((s) => s.method === "POST")?.body).toMatchObject({ outputs: 2 });
+  });
+
   it("video waits until done and prints the result paths", async () => {
     const code = await cli("video", "--prompt", "hi", "--duration", "8");
     expect(code).toBe(0);

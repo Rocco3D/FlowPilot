@@ -30,6 +30,7 @@ let service: RunningService;
 let driver: FileDriver;
 let token: string;
 const imageJob = { type: "image", prompt: "a cat" };
+const videoJob = { type: "video", prompt: "a cat walking" };
 
 beforeEach(async () => {
   setLocale("en");
@@ -148,6 +149,29 @@ describe("host header", () => {
       expect((await raw("GET", "/health", host, null)).status).toBe(200);
       expect((await raw("GET", "/jobs", host)).status).toBe(200);
     }
+  });
+});
+
+describe("configured defaults", () => {
+  it("fills the default model and outputs the request leaves out", async () => {
+    await call("PUT", "/config/defaultImageModel", { value: "fake-image" });
+    await call("PUT", "/config/defaultVideoModel", { value: "fake-video" });
+    await call("PUT", "/config/outputs", { value: "2" });
+
+    const image = (await (await call("POST", "/jobs", imageJob)).json()) as Job;
+    expect(image.request).toMatchObject({ model: "fake-image", outputs: 2 });
+    const video = (await (await call("POST", "/jobs", videoJob)).json()) as Job;
+    expect(video.request).toMatchObject({ model: "fake-video", outputs: 2 });
+  });
+
+  it("keeps what the request asks for", async () => {
+    await call("PUT", "/config/defaultImageModel", { value: "fake-image" });
+    await call("PUT", "/config/outputs", { value: "2" });
+
+    const created = (await (
+      await call("POST", "/jobs", { ...imageJob, model: "explicit", outputs: 3 })
+    ).json()) as Job;
+    expect(created.request).toMatchObject({ model: "explicit", outputs: 3 });
   });
 });
 

@@ -23,6 +23,8 @@ export const JobRequest = z.object({
   confirm: z.boolean().optional(),
 });
 export type JobRequest = z.infer<typeof JobRequest>;
+/** What a client may send: whatever it leaves out is filled in by the service from the configuration. */
+export type JobRequestInput = z.input<typeof JobRequest>;
 
 export const JobStatus = z.enum([
   "queued",

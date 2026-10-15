@@ -6,7 +6,7 @@ import { configDir } from "../core/paths.js";
 import type {
   FlowBalance,
   Job,
-  JobRequest,
+  JobRequestInput,
   ModelInfo,
   SelftestReport,
   SessionStatus,
@@ -71,7 +71,7 @@ export class Client {
   doctor = () => this.json<SessionStatus>("POST", "/doctor");
   selftest = () => this.json<SelftestReport>("POST", "/selftest");
   models = () => this.json<ModelInfo[]>("GET", "/models");
-  createJob = (req: JobRequest) => this.json<Job>("POST", "/jobs", req);
+  createJob = (req: JobRequestInput) => this.json<Job>("POST", "/jobs", req);
   listJobs = () => this.json<Job[]>("GET", "/jobs");
   getJob = (id: string) => this.json<Job>("GET", `/jobs/${encodeURIComponent(id)}`);
   cancelJob = (id: string) => this.json<Job>("DELETE", `/jobs/${encodeURIComponent(id)}`);
