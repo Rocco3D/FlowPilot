@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readServiceInfo, startService, type RunningService } from "../../src/core/service.js";
@@ -66,6 +67,36 @@ function call(method: string, route: string, body?: unknown, auth: string | null
   });
 }
 
+/** fetch cannot override the Host header, so the raw client is used for that check. */
+function raw(
+  method: string,
+  route: string,
+  host: string,
+  auth: string | null = token,
+): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        host: "127.0.0.1",
+        port: service.port,
+        path: route,
+        method,
+        headers: { host, ...(auth === null ? {} : { authorization: `Bearer ${auth}` }) },
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8");
+          resolve({ status: res.statusCode ?? 0, body: text ? JSON.parse(text) : undefined });
+        });
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
+
 async function createDone(): Promise<Job> {
   const created = (await (await call("POST", "/jobs", imageJob)).json()) as Job;
   for (let i = 0; i < 100; i++) {
@@ -94,6 +125,29 @@ describe("auth", () => {
 
   it("creates the token file with 64 hex chars", () => {
     expect(token).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe("host header", () => {
+  it("rejects a foreign Host on the public route and with a valid token", async () => {
+    for (const route of ["/health", "/jobs"]) {
+      const res = await raw("GET", route, "evil.example");
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({ error: { code: "bad_host" } });
+    }
+  });
+
+  it("rejects a foreign Host without a token as 403, not 401", async () => {
+    const res = await raw("GET", "/jobs", "evil.example", null);
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ error: { code: "bad_host" } });
+  });
+
+  it("accepts 127.0.0.1 and localhost on the service port", async () => {
+    for (const host of [`127.0.0.1:${service.port}`, `localhost:${service.port}`]) {
+      expect((await raw("GET", "/health", host, null)).status).toBe(200);
+      expect((await raw("GET", "/jobs", host)).status).toBe(200);
+    }
   });
 });
 

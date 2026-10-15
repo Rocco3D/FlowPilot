@@ -28,6 +28,8 @@ The token is automatically created on first startup and stored at:
 
 Missing or invalid tokens return HTTP 401.
 
+Every request must also carry a `Host` header pointing at the service itself, that is `127.0.0.1:<port>` or `localhost:<port>`, where `<port>` is the port the service is listening on (see Base URL). This check runs before routing and before the token check, so a request aimed at some other `Host` is refused with HTTP 403 and error code `bad_host`, even on `GET /health` and even without a token.
+
 ## Response Format
 
 All responses are JSON. Error responses use this format:
@@ -46,6 +48,7 @@ All responses are JSON. Error responses use this format:
 - **201**: Created (successful `POST /jobs`)
 - **400**: Bad request (bad_request, config errors)
 - **401**: Unauthorized (missing or invalid token)
+- **403**: Forbidden (bad_host: the `Host` header does not match the service address)
 - **404**: Not found (job_not_found, not_found)
 - **409**: Conflict (job_not_cancellable)
 - **413**: Payload too large (body over 1 MB)

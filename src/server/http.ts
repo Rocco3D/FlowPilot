@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import http from "node:http";
+import type { AddressInfo } from "node:net";
 import path from "node:path";
 import { ZodError } from "zod";
 import { t } from "../i18n/index.js";
@@ -53,6 +54,14 @@ class HttpError extends Error {
 
 const notFound = () => new HttpError(404, "not_found", t("http.notFound"));
 const badRequest = (message: string) => new HttpError(400, "bad_request", message);
+const badHost = () => new HttpError(403, "bad_host", t("http.badHost"));
+
+/** Only the loopback names on the port the server actually listens on. */
+function isLocalHost(host: string | undefined, port: number): boolean {
+  if (!host) return false;
+  const value = host.toLowerCase();
+  return value === `127.0.0.1:${port}` || value === `localhost:${port}`;
+}
 
 function send(res: http.ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { "content-type": "application/json" });
@@ -123,6 +132,11 @@ export function createHttpServer(deps: HttpDeps): http.Server {
   }
 
   async function route(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+    // Runs before the public route and the token check: a request aimed at another
+    // Host is not for us, whatever it carries.
+    const address = server.address() as AddressInfo | null;
+    if (!address || !isLocalHost(req.headers.host, address.port)) throw badHost();
+
     const method = req.method ?? "GET";
     const parts = new URL(req.url ?? "/", "http://localhost").pathname
       .split("/")
@@ -183,10 +197,11 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     throw notFound();
   }
 
-  return http.createServer((req, res) => {
+  const server = http.createServer((req, res) => {
     route(req, res).catch((err: unknown) => {
       const e = toHttpError(err, deps.logger);
       send(res, e.status, { error: { code: e.code, message: e.message } });
     });
   });
+  return server;
 }
