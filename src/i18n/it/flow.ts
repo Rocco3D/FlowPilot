@@ -6,6 +6,8 @@ export default {
   "session.connectFailed":
     "Non riesco a connettermi a Chrome sulla porta {port}. Esegui il comando di accesso, accedi, poi riprova. ({reason})",
   "session.statusConnected": "Chrome è in esecuzione e FlowPilot è collegato.",
+  "session.statusRestarted":
+    "Chrome era già in esecuzione sul profilo, quindi FlowPilot lo ha chiuso e riaperto con una connessione di debug.",
   "session.statusRunning":
     "Chrome è in esecuzione sul profilo ma non è disponibile alcuna connessione di debug.",
   "session.statusStopped": "Chrome non è in esecuzione sul profilo.",

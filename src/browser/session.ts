@@ -113,6 +113,8 @@ export class BrowserSession {
   private readonly headed: boolean;
   private readonly chromePath: string | undefined;
   private browser: Browser | undefined;
+  /** True once FlowPilot has closed a Chrome that was already open on the profile, to restart it with a debug port. */
+  private restartedProfileChrome = false;
 
   constructor(options: SessionOptions = {}) {
     this.profileDir = resolveProfileDir(options.profile ?? "default");
@@ -173,7 +175,12 @@ export class BrowserSession {
     if (existingPort !== undefined) browser = await connect(existingPort).catch(() => undefined);
     if (!browser) {
       // A plain sign-in window holds the profile: quit it gracefully (flushes cookies) first.
-      if (running.length > 0) await closeChromeGracefully(running);
+      // Chrome answers a second launch on the same profile with a new tab, never with a debug port,
+      // so going on without closing it looks like a broken profile.
+      if (running.length > 0) {
+        await closeChromeGracefully(running);
+        this.restartedProfileChrome = true;
+      }
       const port = await this.launchAutomationChrome();
       browser = await connect(port).catch((error: unknown) => {
         throw new FlowPilotError("chrome_connect_failed", "flow.session.connectFailed", {
@@ -236,7 +243,9 @@ export class BrowserSession {
       }
     }
     const key = connected
-      ? "flow.session.statusConnected"
+      ? this.restartedProfileChrome
+        ? "flow.session.statusRestarted"
+        : "flow.session.statusConnected"
       : running
         ? "flow.session.statusRunning"
         : "flow.session.statusStopped";
