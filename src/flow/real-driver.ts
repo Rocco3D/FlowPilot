@@ -1,12 +1,13 @@
 import type { Page } from "playwright-core";
 import { BrowserSession } from "../browser/session.js";
-import { loadConfig } from "../core/config.js";
+import { loadConfig, type Config } from "../core/config.js";
 import { FlowPilotError } from "../core/errors.js";
 import { checkSpend, jobLimit, recordSpend } from "../core/credits.js";
 import { createLogger } from "../core/logger.js";
 import type {
   FlowBalance,
   Job,
+  JobRequest,
   JobResult,
   JobStatus,
   ModelInfo,
@@ -17,14 +18,20 @@ import { t } from "../i18n/index.js";
 import { readBalance } from "./balance.js";
 import { clearComposer } from "./cleanup.js";
 import { downloadResult, writeSummary } from "./download.js";
-import type { FlowDriver } from "./driver.js";
+import type { FlowDriver, FlowJobResult } from "./driver.js";
 import { discoverModels } from "./models.js";
 import { createProject, isSignedIn, listProjects, openHome, openProject } from "./navigation.js";
 import { fillPrompt } from "./prompt.js";
 import { assertFilesExist, attachReferences, planReferences } from "./references.js";
 import { snapshotResults, waitForResults } from "./results.js";
 import { runSelftest } from "./selftest.js";
-import { applySettings, ensureClassicComposer } from "./settings-apply.js";
+import {
+  applySettings,
+  ensureClassicComposer,
+  listModelNames,
+  pickReplacement,
+  sameModel as sameModelName,
+} from "./settings-apply.js";
 import { submitGeneration } from "./submit.js";
 
 const MODEL_CACHE_MS = 60 * 60_000;
@@ -56,7 +63,41 @@ export class RealFlowDriver implements FlowDriver {
       ...status,
       signedIn,
       message: signedIn ? status.message : t("flow.driver.notSignedIn"),
+      ...(await this.checkConfiguredModels()),
     };
+  }
+
+  /**
+   * Compares the configured default models with what Flow offers, so a model that Flow retired shows up in
+   * `doctor` before a job fails on it. Purely a report: nothing here changes the configuration.
+   */
+  private async checkConfiguredModels(): Promise<Pick<SessionStatus, "configuredModels">> {
+    const config = loadConfig();
+    const wanted = [
+      { key: "defaultVideoModel", name: config.defaultVideoModel },
+      { key: "defaultImageModel", name: config.defaultImageModel },
+    ].filter((w): w is { key: string; name: string } => Boolean(w.name));
+    if (wanted.length === 0) return {};
+    try {
+      const page = await this.session.page();
+      await this.openProjectFor(page, undefined);
+      const names = await listModelNames(page);
+      if (!names) return {};
+      const mismatched = wanted
+        .filter((w) => !names.some((n) => sameModelName(n, w.name)))
+        .map((w) => {
+          const suggestion = pickReplacement(w.name, names);
+          return {
+            key: w.key,
+            configured: w.name,
+            available: names,
+            ...(suggestion ? { suggestion } : {}),
+          };
+        });
+      return mismatched.length > 0 ? { configuredModels: mismatched } : {};
+    } catch {
+      return {};
+    }
   }
 
   async selftest(): Promise<SelftestReport> {
@@ -84,7 +125,7 @@ export class RealFlowDriver implements FlowDriver {
     job: Job,
     onProgress?: (status: JobStatus) => void,
     onSpend?: (credits: number) => void,
-  ): Promise<{ results: JobResult[]; credits: number; balance?: number }> {
+  ): Promise<FlowJobResult> {
     this.running = true;
     try {
       return await this.runJob(job, onProgress, onSpend);
@@ -98,11 +139,21 @@ export class RealFlowDriver implements FlowDriver {
     return this.lastBalance;
   }
 
+  /**
+   * True when the model a job asks for is the one the user configured as default, so a model Flow retired can be
+   * swapped for its successor instead of failing the job. A model asked for on the command line always fails.
+   */
+  private modelIsConfigured(request: JobRequest, config: Config): boolean {
+    const configured =
+      request.type === "video" ? config.defaultVideoModel : config.defaultImageModel;
+    return Boolean(configured && request.model && sameModelName(request.model, configured));
+  }
+
   private async runJob(
     job: Job,
     onProgress?: (status: JobStatus) => void,
     onSpend?: (credits: number) => void,
-  ): Promise<{ results: JobResult[]; credits: number; balance?: number }> {
+  ): Promise<FlowJobResult> {
     const request = job.request;
     const references = planReferences(request);
     assertFilesExist(references);
@@ -112,7 +163,9 @@ export class RealFlowDriver implements FlowDriver {
     await ensureClassicComposer(page);
     await clearComposer(page);
 
-    const { cost, model } = await applySettings(page, request);
+    const { cost, model, modelReplaced } = await applySettings(page, request, {
+      allowModelReplacement: this.modelIsConfigured(request, config),
+    });
     checkSpend(cost, {
       maxCreditsPerJob: jobLimit(config.maxCreditsPerJob, request.maxCredits),
       monthlyCreditLimit: config.monthlyCreditLimit,
@@ -154,7 +207,12 @@ export class RealFlowDriver implements FlowDriver {
       const balance = await readBalance(page)
         .then((credits) => this.remember(credits).credits)
         .catch(() => undefined);
-      return { results, credits: cost, ...(balance !== undefined ? { balance } : {}) };
+      return {
+        results,
+        credits: cost,
+        ...(modelReplaced ? { modelReplaced } : {}),
+        ...(balance !== undefined ? { balance } : {}),
+      };
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       throw new FlowPilotError(

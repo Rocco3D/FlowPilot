@@ -63,6 +63,8 @@ export const Job = z.object({
   /** Google Flow credits left on the account after the job, read from Flow. */
   balance: z.number().int().optional(),
   results: z.array(JobResult),
+  /** Something the user should know about how this job ran, in words. */
+  note: z.string().optional(),
   error: JobError.optional(),
 });
 export type Job = z.infer<typeof Job>;
@@ -101,6 +103,17 @@ export const SessionStatus = z.object({
   message: z.string(),
   /** Present only when a newer FlowPilot version is on GitHub. */
   update: UpdateInfo.optional(),
+  /** Configured default models, with what Flow offers instead. Present only when something does not match. */
+  configuredModels: z
+    .array(
+      z.object({
+        key: z.string(),
+        configured: z.string(),
+        available: z.array(z.string()),
+        suggestion: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 export type SessionStatus = z.infer<typeof SessionStatus>;
 

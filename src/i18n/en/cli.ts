@@ -15,6 +15,9 @@ export default {
   "doctor.chrome": "Chrome running: {value}",
   "doctor.connected": "Connected: {value}",
   "doctor.signedIn": "Signed in: {value}",
+  "doctor.modelRetired":
+    "Model {configured} is no longer offered by Flow. The next version will be used: {suggestion}.",
+  "doctor.modelMissing": "Model {configured} is no longer offered by Flow. Available: {available}",
   "login.description": "Sign in to Google Flow in a plain Chrome window",
   "login.profileOption": "Profile name",
   "login.instructions":

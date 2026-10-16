@@ -17,6 +17,13 @@ export function registerInfo(program: Command): void {
           t("cli.doctor.chrome", { value: yesNo(s.chromeRunning) }),
           t("cli.doctor.connected", { value: yesNo(s.connected) }),
           t("cli.doctor.signedIn", { value: yesNo(s.signedIn) }),
+          ...(s.configuredModels ?? []).map((m) =>
+            t(m.suggestion ? "cli.doctor.modelRetired" : "cli.doctor.modelMissing", {
+              configured: m.configured,
+              suggestion: m.suggestion ?? "",
+              available: m.available.join(", "),
+            }),
+          ),
           ...(s.update ? [s.update.message] : []),
         ].join("\n"),
       );

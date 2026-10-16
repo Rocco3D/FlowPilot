@@ -138,7 +138,9 @@ function register(program: Command, type: JobType, ctx: Ctx): void {
           message: job.error?.message ?? job.status,
         });
       }
-      show(opts, job, () => job.results.map((r) => r.path).join("\n"));
+      show(opts, job, () =>
+        [...(job.note ? [job.note] : []), ...job.results.map((r) => r.path)].join("\n"),
+      );
     });
 }
 

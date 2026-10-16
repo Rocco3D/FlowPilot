@@ -189,4 +189,33 @@ describe("JobQueue", () => {
     expect(store.get(first.id)?.status).toBe("done");
     expect(store.get(second.id)?.status).toBe("queued");
   });
+
+  it("notes the model swap on the job and offers it to the configuration callback", async () => {
+    const base = new FakeDriver();
+    const driver: FlowDriver = Object.create(base) as FlowDriver;
+    driver.run = async (job, p) => ({
+      ...(await base.run(job, p)),
+      modelReplaced: { from: "Nano Banana 2", to: "Nano Banana 2.1" },
+    });
+    const swaps: string[][] = [];
+    const queue = new JobQueue(driver, new JobStore(dir), undefined, (job, from, to) => {
+      swaps.push([job.id, from, to]);
+    });
+    const done = await queue.waitFor(queue.enqueue(req).id);
+    expect(done.status).toBe("done");
+    expect(done.note).toBe(
+      "The configured model Nano Banana 2 is no longer offered by Flow, so this job used Nano Banana 2.1. The configuration has been updated.",
+    );
+    expect(swaps).toEqual([[done.id, "Nano Banana 2", "Nano Banana 2.1"]]);
+  });
+
+  it("leaves no note and no callback when no model was swapped", async () => {
+    const swaps: string[] = [];
+    const queue = new JobQueue(new FakeDriver(), new JobStore(dir), undefined, (_j, from) =>
+      swaps.push(from),
+    );
+    const done = await queue.waitFor(queue.enqueue(req).id);
+    expect(done.note).toBeUndefined();
+    expect(swaps).toEqual([]);
+  });
 });

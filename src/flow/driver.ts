@@ -8,6 +8,15 @@ import type {
   SessionStatus,
 } from "../core/schemas.js";
 
+/** What one job run produced, including what the user should know about it. */
+export interface FlowJobResult {
+  results: JobResult[];
+  credits: number;
+  balance?: number;
+  /** Set when a configured default model Flow no longer offers was swapped for its successor. */
+  modelReplaced?: { from: string; to: string };
+}
+
 /** Everything the rest of the app needs from the Google Flow automation. */
 export interface FlowDriver {
   /** Reports whether Chrome is running, reachable and signed in to Flow. */
@@ -25,7 +34,7 @@ export interface FlowDriver {
     onProgress?: (status: JobStatus) => void,
     /** Called right after the generation is submitted, with the credits actually spent. */
     onSpend?: (credits: number) => void,
-  ): Promise<{ results: JobResult[]; credits: number; balance?: number }>;
+  ): Promise<FlowJobResult>;
   /** Google Flow credits left on the account; while a job runs, the last value read. */
   balance?(): Promise<FlowBalance | undefined>;
   /** Releases the browser connection; with `closeBrowser` also quits the automation Chrome. */

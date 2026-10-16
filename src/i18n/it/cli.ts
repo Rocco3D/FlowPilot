@@ -15,6 +15,10 @@ export default {
   "doctor.chrome": "Chrome in esecuzione: {value}",
   "doctor.connected": "Collegato: {value}",
   "doctor.signedIn": "Accesso effettuato: {value}",
+  "doctor.modelRetired":
+    "Il modello {configured} non è più offerto da Flow. Verrà usata la versione successiva: {suggestion}.",
+  "doctor.modelMissing":
+    "Il modello {configured} non è più offerto da Flow. Disponibili: {available}",
   "login.description": "Accedi a Google Flow in una finestra Chrome ordinaria",
   "login.profileOption": "Nome profilo",
   "login.instructions":

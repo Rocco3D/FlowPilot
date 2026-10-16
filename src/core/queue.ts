@@ -16,6 +16,11 @@ export class JobQueue extends EventEmitter {
     private readonly driver: FlowDriver,
     private readonly store: JobStore,
     private readonly logger?: Logger,
+    /**
+     * Called when a job ran with a successor of the configured default model, so the configuration can be
+     * corrected once. The job itself is passed for the user-facing note.
+     */
+    private readonly onModelReplaced?: (job: Job, from: string, to: string) => void,
   ) {
     super();
     store.recoverInterrupted();
@@ -96,7 +101,7 @@ export class JobQueue extends EventEmitter {
       startedAt: new Date().toISOString(),
     });
     try {
-      const { results, credits, balance } = await this.driver.run(
+      const { results, credits, balance, modelReplaced } = await this.driver.run(
         job,
         (status) => {
           this.change(job.id, { status });
@@ -105,6 +110,13 @@ export class JobQueue extends EventEmitter {
           this.change(job.id, { credits: spent });
         },
       );
+      if (modelReplaced) {
+        // Tell the user what changed, and let whoever set the configuration fix it once and for all.
+        const note = t("core.queue.modelReplaced", modelReplaced);
+        this.logger?.warn("configured model replaced", { id: job.id, ...modelReplaced });
+        this.onModelReplaced?.(job, modelReplaced.from, modelReplaced.to);
+        this.change(job.id, { note });
+      }
       this.change(job.id, {
         status: "done",
         results,

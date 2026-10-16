@@ -4,7 +4,7 @@ import type { Server } from "node:http";
 import type { FlowDriver } from "../flow/driver.js";
 import { createHttpServer } from "../server/http.js";
 import { ensureToken } from "../server/auth.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, setConfigValue } from "./config.js";
 import { JobStore } from "./jobs.js";
 import { createLogger } from "./logger.js";
 import { dataDir as defaultDataDir } from "./paths.js";
@@ -53,7 +53,20 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
   const token = ensureToken(configDir);
   const store = new JobStore(path.join(dataDir, "jobs"));
   const logger = createLogger({ dir: path.join(dataDir, "logs"), level: config.logLevel });
-  const queue = new JobQueue(driver, store, logger);
+  const queue = new JobQueue(driver, store, logger, (job, from, to) => {
+    // Flow retired the configured model: fix the configuration once, so the next job does not report it again.
+    const key = job.request.type === "video" ? "defaultVideoModel" : "defaultImageModel";
+    try {
+      if (loadConfig(configDir)[key] !== from) return;
+      setConfigValue(key, to, configDir);
+      logger.info("configured model updated", { key, from, to });
+    } catch (error) {
+      logger.warn("configured model not updated", {
+        key,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
 
   let stopping: Promise<void> | undefined;
   let idleTimer: NodeJS.Timeout | undefined;

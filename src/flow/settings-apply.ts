@@ -59,7 +59,8 @@ export async function ensureClassicComposer(page: Page): Promise<void> {
   throw new FlowPilotError("agent_mode_on", "flow.gen.agentModeOn");
 }
 
-const sameModel = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+export const sameModel = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** Lists the requested settings that the page does not show; empty when all match. */
 export function diffSettings(wanted: WantedSettings, actual: TriggerSettings): string[] {
@@ -160,22 +161,85 @@ async function readModelName(page: Page): Promise<string> {
     .name;
 }
 
-async function chooseModel(page: Page, wanted: string): Promise<void> {
-  if (sameModel(await readModelName(page), wanted)) return;
+/**
+ * Selects `wanted`. When it is gone and a replacement is allowed, selects the next version of the same
+ * family and returns it; otherwise throws, listing what Flow offers.
+ */
+async function chooseModel(
+  page: Page,
+  wanted: string,
+  allowReplacement: boolean,
+): Promise<{ replaced?: string }> {
+  if (sameModel(await readModelName(page), wanted)) return {};
   await openModelMenu(page);
   const items = await readModelMenu(page);
-  const index = items.findIndex((m) => sameModel(m.name, wanted));
+  const names = items.map((m) => m.name);
+  let index = items.findIndex((m) => sameModel(m.name, wanted));
+  let replaced: string | undefined;
+  if (index < 0 && allowReplacement) {
+    const next = pickReplacement(wanted, names);
+    if (next) {
+      replaced = next;
+      index = items.findIndex((m) => sameModel(m.name, next));
+    }
+  }
   if (index < 0) {
     await dismissOverlays(page);
-    throw optionNotAvailable(
-      "model",
-      wanted,
-      items.map((m) => m.name),
-    );
+    throw optionNotAvailable("model", wanted, names);
   }
   await clickRobust(selectors.modelMenuItems.locate(page).nth(index));
   await page.waitForTimeout(500);
   await openSettings(page);
+  return replaced ? { replaced } : {};
+}
+
+/** Splits a model label into its name and its numeric version, when it ends in one: "Nano Banana 2.1" -> ["Nano Banana", 2.1]. */
+function splitVersion(label: string): { name: string; version?: number } {
+  const trimmed = label.trim();
+  const cut = trimmed.lastIndexOf(" ");
+  if (cut < 0) return { name: trimmed };
+  const tail = trimmed.slice(cut + 1);
+  const version = /^\d+(\.\d+)*$/.test(tail) ? Number(tail) : undefined;
+  return version === undefined
+    ? { name: trimmed }
+    : { name: trimmed.slice(0, cut).trim(), version };
+}
+
+/**
+ * The offered model that takes over from one Flow no longer offers: same name, next version up. When Flow replaces
+ * "Nano Banana 2" with "Nano Banana 2.1" the configured model keeps working instead of failing every job. Anything
+ * that is not the same family in the next version is left alone: guessing a replacement is worse than saying no.
+ */
+export function pickReplacement(wanted: string, offered: string[]): string | undefined {
+  const from = splitVersion(wanted);
+  if (from.version === undefined) return undefined;
+  let best: { label: string; version: number } | undefined;
+  for (const label of offered) {
+    if (sameModel(label, wanted)) continue;
+    const to = splitVersion(label);
+    if (to.version === undefined || to.version <= from.version) continue;
+    if (!sameModel(to.name, from.name)) continue;
+    if (!best || to.version < best.version) best = { label, version: to.version };
+  }
+  return best?.label;
+}
+
+/**
+ * The model names Flow offers right now, for reporting. Returns undefined when the page cannot answer,
+ * so a check that only reports never breaks the thing it reports about.
+ */
+export async function listModelNames(page: Page): Promise<string[] | undefined> {
+  try {
+    await dismissOverlays(page);
+    await openSettings(page);
+    await openModelMenu(page);
+    const names = (await readModelMenu(page)).map((m) => m.name);
+    await dismissOverlays(page);
+    return names.length > 0 ? names : undefined;
+  } catch {
+    await dismissOverlays(page);
+    return undefined;
+  }
 }
 
 /**
@@ -185,7 +249,8 @@ async function chooseModel(page: Page, wanted: string): Promise<void> {
 export async function applySettings(
   page: Page,
   request: JobRequest,
-): Promise<{ cost: number; model: string }> {
+  options: { allowModelReplacement?: boolean } = {},
+): Promise<{ cost: number; model: string; modelReplaced?: { from: string; to: string } }> {
   if (request.ratio && !(request.ratio in RATIO_ICON)) {
     throw notApplied(
       t("flow.gen.settingsMismatch", {
@@ -206,7 +271,10 @@ export async function applySettings(
   // Frames on/off changes which resolutions/durations Flow offers: set it first.
   if (request.type === "video")
     await setFramesMode(page, Boolean(request.startFrame || request.endFrame));
-  if (request.model) await chooseModel(page, request.model);
+  const { replaced } = request.model
+    ? await chooseModel(page, request.model, options.allowModelReplacement === true)
+    : {};
+  const wantedModel = replaced ?? request.model;
   if (request.ratio) {
     const ratios = Object.keys(RATIO_ICON);
     const offered = async () => {
@@ -239,7 +307,7 @@ export async function applySettings(
   const diffs = diffSettings(
     {
       mode: request.type,
-      ...(request.model ? { model: request.model } : {}),
+      ...(wantedModel ? { model: wantedModel } : {}),
       ...(request.ratio ? { ratio: request.ratio } : {}),
       outputs: request.outputs,
       ...(request.resolution ? { resolution: request.resolution } : {}),
@@ -263,5 +331,9 @@ export async function applySettings(
   if (cost === undefined && request.type === "video") {
     throw new FlowPilotError("credits_unreadable", "flow.gen.creditsUnreadable");
   }
-  return { cost: cost ?? 0, model };
+  return {
+    cost: cost ?? 0,
+    model,
+    ...(replaced ? { modelReplaced: { from: request.model ?? "", to: replaced } } : {}),
+  };
 }
