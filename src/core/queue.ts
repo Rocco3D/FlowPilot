@@ -18,9 +18,10 @@ export class JobQueue extends EventEmitter {
     private readonly logger?: Logger,
     /**
      * Called when a job ran with a successor of the configured default model, so the configuration can be
-     * corrected once. The job itself is passed for the user-facing note.
+     * corrected once. Returns true when it actually wrote the file: the note on the job must not claim a change
+     * that did not happen.
      */
-    private readonly onModelReplaced?: (job: Job, from: string, to: string) => void,
+    private readonly onModelReplaced?: (job: Job, from: string, to: string) => boolean | void,
   ) {
     super();
     store.recoverInterrupted();
@@ -112,9 +113,11 @@ export class JobQueue extends EventEmitter {
       );
       if (modelReplaced) {
         // Tell the user what changed, and let whoever set the configuration fix it once and for all.
-        const note = t("core.queue.modelReplaced", modelReplaced);
+        const updated = this.onModelReplaced?.(job, modelReplaced.from, modelReplaced.to) === true;
+        const note = updated
+          ? t("core.queue.modelReplacedConfigUpdated", modelReplaced)
+          : t("core.queue.modelReplaced", modelReplaced);
         this.logger?.warn("configured model replaced", { id: job.id, ...modelReplaced });
-        this.onModelReplaced?.(job, modelReplaced.from, modelReplaced.to);
         this.change(job.id, { note });
       }
       this.change(job.id, {

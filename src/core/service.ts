@@ -57,14 +57,17 @@ export async function startService(options: ServiceOptions): Promise<RunningServ
     // Flow retired the configured model: fix the configuration once, so the next job does not report it again.
     const key = job.request.type === "video" ? "defaultVideoModel" : "defaultImageModel";
     try {
-      if (loadConfig(configDir)[key] !== from) return;
+      // Someone else may have changed it while the job was running; their choice wins and is not overwritten.
+      if (loadConfig(configDir)[key] !== from) return false;
       setConfigValue(key, to, configDir);
       logger.info("configured model updated", { key, from, to });
+      return true;
     } catch (error) {
       logger.warn("configured model not updated", {
         key,
         reason: error instanceof Error ? error.message : String(error),
       });
+      return false;
     }
   });
 

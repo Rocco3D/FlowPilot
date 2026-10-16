@@ -201,6 +201,7 @@ describe("JobQueue", () => {
     const swaps: string[][] = [];
     const queue = new JobQueue(driver, new JobStore(dir), undefined, (job, from, to) => {
       swaps.push([job.id, from, to]);
+      return true;
     });
     const done = await queue.waitFor(queue.enqueue(req).id);
     expect(done.status).toBe("done");
@@ -211,14 +212,31 @@ describe("JobQueue", () => {
     expect(swaps).toEqual([[done.id, "Nano Banana 2", "Nano Banana 2.1"]]);
   });
 
+  it("does not claim the configuration was updated when it was not", async () => {
+    const base = new FakeDriver();
+    const driver: FlowDriver = Object.create(base) as FlowDriver;
+    driver.run = async (job, p) => ({
+      ...(await base.run(job, p)),
+      modelReplaced: { from: "Nano Banana 2", to: "Nano Banana 2.1" },
+    });
+    // The callback refuses, the way the service does when the write fails or someone else changed the setting.
+    const queue = new JobQueue(driver, new JobStore(dir), undefined, () => false);
+    const done = await queue.waitFor(queue.enqueue(req).id);
+    expect(done.note).toBe(
+      "The configured model Nano Banana 2 is no longer offered by Flow, so this job used Nano Banana 2.1.",
+    );
+    expect(done.note).not.toContain("configuration");
+  });
+
   it("records the model used even when nothing was replaced, and no note", async () => {
     const base = new FakeDriver();
     const driver: FlowDriver = Object.create(base) as FlowDriver;
     driver.run = async (job, p) => ({ ...(await base.run(job, p)), modelUsed: "Nano Banana 2.1" });
     const swaps: string[] = [];
-    const queue = new JobQueue(driver, new JobStore(dir), undefined, (_j, from) =>
-      swaps.push(from),
-    );
+    const queue = new JobQueue(driver, new JobStore(dir), undefined, (_j, from) => {
+      swaps.push(from);
+      return true;
+    });
     const done = await queue.waitFor(queue.enqueue(req).id);
     expect(done.modelUsed).toBe("Nano Banana 2.1");
     expect(done.note).toBeUndefined();
@@ -227,9 +245,10 @@ describe("JobQueue", () => {
 
   it("leaves no note and no callback when no model was swapped", async () => {
     const swaps: string[] = [];
-    const queue = new JobQueue(new FakeDriver(), new JobStore(dir), undefined, (_j, from) =>
-      swaps.push(from),
-    );
+    const queue = new JobQueue(new FakeDriver(), new JobStore(dir), undefined, (_j, from) => {
+      swaps.push(from);
+      return true;
+    });
     const done = await queue.waitFor(queue.enqueue(req).id);
     expect(done.note).toBeUndefined();
     expect(swaps).toEqual([]);

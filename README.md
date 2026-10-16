@@ -141,7 +141,7 @@ There is one automatic case. When the job uses the model configured as default (
 the job result, and updates your configuration so it happens once:
 
 ```
-Il modello configurato Nano Banana 2 non è più offerto da Flow, quindi questo job ha usato Nano Banana 2.1. La configurazione è stata aggiornata.
+The configured model Nano Banana 2 is no longer offered by Flow, so this job used Nano Banana 2.1. The configuration has been updated.
 ```
 
 Nothing else is guessed. A model asked for explicitly with `--model` is never replaced, because you asked for that

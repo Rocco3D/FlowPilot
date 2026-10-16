@@ -225,4 +225,16 @@ describe("mcp server", () => {
     }
     expect(written).toBeUndefined();
   });
+
+  it("offers no way to exceed a credit limit from the generation tools", async () => {
+    const { tools } = await mcp.listTools();
+    for (const name of ["generate_video", "generate_image"]) {
+      const shape = tools.find((t) => t.name === name)?.inputSchema as {
+        properties?: Record<string, unknown>;
+      };
+      expect(Object.keys(shape.properties ?? {}), name).not.toContain("confirm");
+      expect(Object.keys(shape.properties ?? {}), name).not.toContain("maxCredits");
+      expect(Object.keys(shape.properties ?? {}), name).toContain("prompt");
+    }
+  });
 });

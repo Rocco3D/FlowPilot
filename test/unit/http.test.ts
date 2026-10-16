@@ -159,9 +159,18 @@ describe("configured defaults", () => {
     await call("PUT", "/config/outputs", { value: "2" });
 
     const image = (await (await call("POST", "/jobs", imageJob)).json()) as Job;
-    expect(image.request).toMatchObject({ model: "fake-image", outputs: 2 });
+    expect(image.request).toMatchObject({ model: "fake-image", outputs: 2, modelFromConfig: true });
     const video = (await (await call("POST", "/jobs", videoJob)).json()) as Job;
-    expect(video.request).toMatchObject({ model: "fake-video", outputs: 2 });
+    expect(video.request).toMatchObject({ model: "fake-video", outputs: 2, modelFromConfig: true });
+  });
+
+  it("never marks a model the request names as configured, even when it equals the default", async () => {
+    await call("PUT", "/config/defaultImageModel", { value: "fake-image" });
+
+    const created = (await (
+      await call("POST", "/jobs", { ...imageJob, model: "fake-image", modelFromConfig: true })
+    ).json()) as Job;
+    expect(created.request).toMatchObject({ model: "fake-image", modelFromConfig: false });
   });
 
   it("keeps what the request asks for", async () => {

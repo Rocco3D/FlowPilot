@@ -199,7 +199,8 @@ function splitVersion(label: string): { name: string; version?: number } {
   const cut = trimmed.lastIndexOf(" ");
   if (cut < 0) return { name: trimmed };
   const tail = trimmed.slice(cut + 1);
-  const version = /^\d+(\.\d+)*$/.test(tail) ? Number(tail) : undefined;
+  // At most one dot: "2.1.1" is not a number, and a version that cannot be compared is not stepped up from.
+  const version = /^\d+(\.\d+)?$/.test(tail) ? Number(tail) : undefined;
   return version === undefined
     ? { name: trimmed }
     : { name: trimmed.slice(0, cut).trim(), version };

@@ -20,7 +20,8 @@ configuration.
 
 There is one automatic case. When the model a job uses is the one configured as default (`defaultVideoModel` or
 `defaultImageModel`) and Flow offers the **next version of the same name**, FlowPilot uses that one, says so on the
-job result (`note`), updates the configuration once and writes both steps to the log. `Nano Banana 2` becomes
+job result (`note`), updates the configuration once (unless it was changed while the job ran or could not be
+written, which the note also says) and writes both steps to the log. `Nano Banana 2` becomes
 `Nano Banana 2.1` this way. Nothing else is guessed: `Nano Banana 2` does not become `Nano Banana Pro`, a model
 without a version is not replaced, and a model asked for explicitly with `--model` is never replaced, because you
 asked for that one by name.
@@ -49,9 +50,10 @@ yourself once you know why it failed.
 
 ## Flow's Agent mode must be off
 
-Flow's Agent mode replaces the prompt composer FlowPilot drives. When it is on, jobs stop with `agent_mode_on`
-instead of touching a page that is not the one they were written for. Turn it off in Flow, then run the job again.
-`flowpilot selftest` checks it without spending credits.
+Flow's Agent mode replaces the prompt composer FlowPilot drives. When it is on, or its chat panel is open, FlowPilot
+closes the panel and turns Agent mode off before reading models or running a job. When it cannot, the job stops with
+`agent_mode_on` instead of touching a page that is not the one it was written for: turn it off in Flow, then run the
+job again. `flowpilot selftest` checks it without spending credits.
 
 ## Flow is driven in English
 

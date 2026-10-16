@@ -35,6 +35,11 @@ describe("pickReplacement", () => {
     expect(pickReplacement("Imagen", IMAGE_MODELS)).toBeUndefined();
   });
 
+  it("refuses a version with more than one dot, since it cannot be compared", () => {
+    expect(pickReplacement("Nano Banana 2.1.1", ["Nano Banana 2.2"])).toBeUndefined();
+    expect(pickReplacement("Nano Banana 2", ["Nano Banana 2.1.1"])).toBeUndefined();
+  });
+
   it("finds nothing when nothing is offered", () => {
     expect(pickReplacement("Nano Banana 2", [])).toBeUndefined();
   });

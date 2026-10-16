@@ -65,7 +65,7 @@ Health check. No authentication required.
 ```json
 {
   "ok": true,
-  "version": "0.1.2"
+  "version": "0.1.3"
 }
 ```
 
@@ -113,7 +113,7 @@ Checks the current session status including Chrome state, API connection, and au
   - `key` (string): Configuration key, `defaultVideoModel` or `defaultImageModel`.
   - `configured` (string): The model name in the configuration.
   - `available` (array of strings): The model names Flow offers right now.
-  - `suggestion` (string, optional): The next version of the same name, when Flow offers one. A job using the configured model will use it and the configuration will be updated; when missing, the job will fail and list what is available.
+  - `suggestion` (string, optional): The next version of the same name, when Flow offers one. A job using the configured model will use it and the configuration will be updated, unless it was changed while the job ran or could not be written; when missing, the job will fail and list what is available.
 
 ### POST /selftest
 
@@ -245,7 +245,8 @@ Provide a JSON object with the following fields (from `JobRequest`):
     "model": "Nano Banana 2.1",
     "ratio": "1:1",
     "outputs": 1,
-    "outDir": "C:\\Users\\me\\Documents\\FlowPilot"
+    "outDir": "C:\\Users\\me\\Documents\\FlowPilot",
+    "modelFromConfig": false
   },
   "status": "queued",
   "createdAt": "2026-10-02T14:30:00.000Z",
@@ -307,7 +308,8 @@ Lists all jobs, newest first.
       "model": "Nano Banana 2.1",
       "ratio": "1:1",
       "outputs": 1,
-      "outDir": "C:\\Users\\me\\Documents\\FlowPilot"
+      "outDir": "C:\\Users\\me\\Documents\\FlowPilot",
+      "modelFromConfig": false
     },
     "status": "done",
     "createdAt": "2026-10-02T14:30:00.000Z",
@@ -341,7 +343,8 @@ Retrieves details of a specific job.
     "model": "Nano Banana 2.1",
     "ratio": "1:1",
     "outputs": 1,
-    "outDir": "C:\\Users\\me\\Documents\\FlowPilot"
+    "outDir": "C:\\Users\\me\\Documents\\FlowPilot",
+    "modelFromConfig": false
   },
   "status": "done",
   "createdAt": "2026-10-02T14:30:00.000Z",
@@ -484,7 +487,8 @@ The `Job` object represents a generation task.
 **Fields:**
 
 - `id` (string): Unique job identifier, built from the creation time (e.g., "20261002-143000000-a1b2").
-- `request` (JobRequest): The original request that created this job.
+- `request` (JobRequest): The request that created this job, with what it left out filled in from the configuration (`model`, `outputs`, `outDir`), plus one field the service sets itself:
+  - `modelFromConfig` (boolean): `true` when `model` came from `defaultVideoModel` or `defaultImageModel`, the only case in which a model Flow no longer offers may be replaced by its successor. A value sent by the client is ignored.
 - `status` (string): Current status (see below).
 - `createdAt` (string): ISO 8601 timestamp when the job was created.
 - `startedAt` (string, optional): ISO 8601 timestamp when generation started.

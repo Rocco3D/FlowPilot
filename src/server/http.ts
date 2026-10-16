@@ -165,6 +165,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       const raw = (await readJson(req)) as { outputs?: number };
       const body = JobRequest.parse(raw);
       const cfg = loadConfig(deps.configDir);
+      const configured = body.type === "video" ? cfg.defaultVideoModel : cfg.defaultImageModel;
       // What the request leaves out comes from the configuration; `raw` is read too because the schema has already
       // filled `outputs` by the time the body is parsed.
       return send(
@@ -172,8 +173,9 @@ export function createHttpServer(deps: HttpDeps): http.Server {
         201,
         queue.enqueue({
           ...body,
-          model:
-            body.model ?? (body.type === "video" ? cfg.defaultVideoModel : cfg.defaultImageModel),
+          model: body.model ?? configured,
+          // Overwrites whatever the client sent: only the service knows where the model came from.
+          modelFromConfig: body.model === undefined && configured !== undefined,
           outputs: raw.outputs ?? cfg.outputs,
           outDir: body.outDir ?? cfg.outputDir,
         }),

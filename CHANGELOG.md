@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `--max-credits` can only lower the configured per-job limit, never raise it
 - `defaultVideoModel`, `defaultImageModel`, `outputs` and `locale` are read as documented; the first three were documented but read by nothing
 - The session status says when Chrome was already open on the profile and FlowPilot restarted it, instead of the user seeing a window disappear for no reason
+- The MCP tools `generate_video` and `generate_image` no longer accept `confirm`, so an assistant cannot let a job exceed the credit limits on its own; `--confirm` and the HTTP API still can
 - The MCP tools start the service again when they find it stopped, accept calls without arguments, and wait at most 45 seconds for a job before reporting it as still running
 
 ### Fixed

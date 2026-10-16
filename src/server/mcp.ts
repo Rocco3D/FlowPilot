@@ -29,7 +29,14 @@ const WAIT =
   "result file paths; if the job is still running it returns { still_running: true, id, status } with no error, " +
   "because the job is still going: call get_job in a minute, or pass wait=false to only get the job id back.";
 
-const common = JobRequest.omit({ type: true, maxCredits: true }).shape;
+// `confirm` is left out for the same reason the credit limits are not in WRITABLE_KEYS: exceeding a limit needs the
+// user, and a tool argument is something the assistant sets on its own.
+const common = JobRequest.omit({
+  type: true,
+  maxCredits: true,
+  confirm: true,
+  modelFromConfig: true,
+}).shape;
 // `outputs` loses the schema default on purpose: the SDK fills defaults in before we see the arguments, and a filled
 // in 1 would hide the configured `outputs` from the service.
 const generateShape = {
@@ -123,7 +130,7 @@ export function createMcpServer(
           still_running: true,
           id: job.id,
           status: job.status,
-          hint: `Job ${job.id} is still ${job.status} and keeps running in FlowPilot. Call get_job with id "${job.id}" in about a minute to read the result file paths, and do not generate it again: this work is not lost and costs nothing to repeat.`,
+          hint: `Job ${job.id} is still ${job.status} and keeps running in FlowPilot. Call get_job with id "${job.id}" in about a minute to read the result file paths. Do not generate it again: the job is not lost, and generating it again would spend the credits a second time.`,
         };
       }
       await new Promise((r) => setTimeout(r, pollMs));
@@ -204,8 +211,8 @@ export function createMcpServer(
   tool(
     "set_config",
     `Change one FlowPilot setting. Only ${WRITABLE_KEYS.join(", ")} can be changed: the credit limits are not ` +
-      "writable from a tool call, because spending more needs the user, not the assistant. The setting takes " +
-      "effect on the next job.",
+      "writable from a tool call, because spending more needs the user, not the assistant. The default models and " +
+      "outputs take effect on the next job; locale takes effect the next time the service starts.",
     { key: z.enum(WRITABLE_KEYS), value: z.string() },
     async ({ key, value }) => {
       const updated = await client.setConfig(key, value);

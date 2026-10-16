@@ -3,6 +3,8 @@ export default {
   "jobs.notFound": "Job non trovato: {id}",
   "queue.notCancellable": "Il job {id} non può essere annullato perché è {status}",
   "queue.modelReplaced":
+    "Il modello configurato {from} non è più offerto da Flow, quindi questo job ha usato {to}.",
+  "queue.modelReplacedConfigUpdated":
     "Il modello configurato {from} non è più offerto da Flow, quindi questo job ha usato {to}. La configurazione è stata aggiornata.",
   "config.invalid": "File di configurazione non valido {path}: {reason}",
   "config.unknownKey": "Chiave di configurazione sconosciuta: {key}",

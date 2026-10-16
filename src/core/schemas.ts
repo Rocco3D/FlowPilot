@@ -21,6 +21,11 @@ export const JobRequest = z.object({
   maxCredits: z.number().int().min(0).optional(),
   /** Overrides the credit limits for this job. */
   confirm: z.boolean().optional(),
+  /**
+   * Set by the service, never by the client: true when `model` came from the configured default, the only case in
+   * which a model Flow retired may be replaced by its successor.
+   */
+  modelFromConfig: z.boolean().optional(),
 });
 export type JobRequest = z.infer<typeof JobRequest>;
 /** What a client may send: whatever it leaves out is filled in by the service from the configuration. */

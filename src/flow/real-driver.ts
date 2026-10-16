@@ -1,13 +1,12 @@
 import type { Page } from "playwright-core";
 import { BrowserSession } from "../browser/session.js";
-import { loadConfig, type Config } from "../core/config.js";
+import { loadConfig } from "../core/config.js";
 import { FlowPilotError } from "../core/errors.js";
 import { checkSpend, jobLimit, recordSpend } from "../core/credits.js";
 import { createLogger } from "../core/logger.js";
 import type {
   FlowBalance,
   Job,
-  JobRequest,
   JobResult,
   JobStatus,
   ModelInfo,
@@ -139,16 +138,6 @@ export class RealFlowDriver implements FlowDriver {
     return this.lastBalance;
   }
 
-  /**
-   * True when the model a job asks for is the one the user configured as default, so a model Flow retired can be
-   * swapped for its successor instead of failing the job. A model asked for on the command line always fails.
-   */
-  private modelIsConfigured(request: JobRequest, config: Config): boolean {
-    const configured =
-      request.type === "video" ? config.defaultVideoModel : config.defaultImageModel;
-    return Boolean(configured && request.model && sameModelName(request.model, configured));
-  }
-
   private async runJob(
     job: Job,
     onProgress?: (status: JobStatus) => void,
@@ -163,8 +152,9 @@ export class RealFlowDriver implements FlowDriver {
     await ensureClassicComposer(page);
     await clearComposer(page);
 
+    // Only the configured default may be swapped for its successor: a model asked for by name always fails.
     const { cost, model, modelReplaced } = await applySettings(page, request, {
-      allowModelReplacement: this.modelIsConfigured(request, config),
+      allowModelReplacement: request.modelFromConfig === true,
     });
     checkSpend(cost, {
       maxCreditsPerJob: jobLimit(config.maxCreditsPerJob, request.maxCredits),
