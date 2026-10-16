@@ -26,7 +26,9 @@ With `wait` true the generation tools poll every 3 seconds, for at most 45 secon
 
 A finished job reports `modelUsed`, the model it really ran with. It differs from `request.model` when Flow no longer offered the configured model and the job ran with the next version of the same name; in that case the job also carries a `note` in words, and the configuration has been updated.
 
-`list_models`, `get_credits`, `selftest` and `doctor` take no parameters and accept a call with no `arguments` at all, as the protocol allows, as well as an empty object. Tools that have parameters require them.
+In `get_config`, a default model or a language that is not set comes back as `null`, not missing: "not set" is what makes a job use the model already selected in Flow, and an assistant has to be able to tell it from a setting that does not exist.
+
+`list_models`, `get_credits`, `selftest`, `doctor` and `get_config` take no parameters and accept a call with no `arguments` at all, as the protocol allows, as well as an empty object. Tools that have parameters require them.
 
 ## Configuration
 
