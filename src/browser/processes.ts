@@ -9,15 +9,18 @@ const WIN_LIST_COMMAND =
 /**
  * Parses "pid command line" lines and returns the root Chrome processes (no `--type=`)
  * whose `--user-data-dir` is exactly this profile.
+ *
+ * Chrome writes the path quoted when it was not given quoted, so a Chrome started by the user on the FlowPilot
+ * profile reads `--user-data-dir="C:\..."` while one started by FlowPilot reads `--user-data-dir=C:\...`. Both
+ * have to match, or FlowPilot does not see the Chrome it is supposed to reuse or close.
  */
 export function parseProcessList(stdout: string, profileDir: string, selfPid: number): number[] {
   const needle = `--user-data-dir=${profileDir}`;
   const pids: number[] = [];
   for (const raw of stdout.split("\n")) {
-    const line = raw.trim();
-    if (!(line.includes(`${needle} `) || line.includes(`${needle}"`) || line.endsWith(needle))) {
-      continue;
-    }
+    // Quotes are noise here: Chrome quotes the flag, or only its value, depending on how it was started.
+    const line = raw.trim().replaceAll('"', "");
+    if (!line.includes(`${needle} `) && !line.endsWith(needle)) continue;
     if (line.includes("--type=")) continue;
     const pid = Number.parseInt(line, 10);
     if (!Number.isNaN(pid) && pid !== selfPid) pids.push(pid);

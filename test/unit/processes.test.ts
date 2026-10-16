@@ -13,6 +13,14 @@ describe("parseProcessList", () => {
     expect(parseProcessList(out, win, 1)).toEqual([100, 101]);
   });
 
+  it("finds a Chrome the user started, which quotes only the profile path", () => {
+    const out = [
+      `11692 "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --user-data-dir="${win}" --no-first-run https://flow.google.com/?hl=en`,
+      `11693 "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --type=renderer --user-data-dir="${win}"`,
+    ].join("\r\n");
+    expect(parseProcessList(out, win, 1)).toEqual([11692]);
+  });
+
   it("matches ps-style lines and skips helpers", () => {
     const dir = "/home/a/.local/share/flowpilot/profiles/default";
     const out = [

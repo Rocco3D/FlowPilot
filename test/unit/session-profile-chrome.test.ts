@@ -92,6 +92,8 @@ describe("a Chrome already open on the FlowPilot profile", () => {
     expect(status.message).toBe(
       "Chrome was already open on the profile, so FlowPilot closed it and reopened it with a debugging connection.",
     );
+    // It is news, not a state: the next report goes back to the normal message.
+    expect((await session.status()).message).toBe("Chrome is running and FlowPilot is connected.");
   });
 
   it("is left alone when it already answers on a debug port", async () => {

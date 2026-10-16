@@ -242,8 +242,11 @@ export class BrowserSession {
         }
       }
     }
+    const restarted = this.restartedProfileChrome;
+    // It is news, not a state: report it once, the first time anyone asks.
+    this.restartedProfileChrome = false;
     const key = connected
-      ? this.restartedProfileChrome
+      ? restarted
         ? "flow.session.statusRestarted"
         : "flow.session.statusConnected"
       : running
