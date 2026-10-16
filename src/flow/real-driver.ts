@@ -210,6 +210,7 @@ export class RealFlowDriver implements FlowDriver {
       return {
         results,
         credits: cost,
+        modelUsed: model,
         ...(modelReplaced ? { modelReplaced } : {}),
         ...(balance !== undefined ? { balance } : {}),
       };

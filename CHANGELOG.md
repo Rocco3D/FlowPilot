@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - A configured default model that Flow no longer offers is replaced by the next version of the same name (`Nano Banana 2` to `Nano Banana 2.1`). The job result says so (`note`), the configuration is updated once and both steps are logged. A model asked for explicitly with `--model` is never replaced, and nothing is guessed when Flow does not offer the same family in a higher version
 - `doctor` reports the configured default models that Flow no longer offers, with the successor that will be used, before any job fails on them
+- The MCP tools `get_config` and `set_config`, so an assistant can read the configuration and change the default models, the outputs per job and the language. The credit limits are deliberately not writable from a tool call: a tool that could raise `maxCreditsPerJob` would be a way to spend without asking
+- Every finished job reports the model it really ran with (`modelUsed`), which differs from the requested model when a retired configured model was replaced, so a client does not have to read it out of the note
 - `--confirm` is a real flag on `video` and `image`, and it is what the credit limit messages tell you to use
 - Results are matched to the job by their stable media id, so a job never picks up results left in the project by an earlier one
 

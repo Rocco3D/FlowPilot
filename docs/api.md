@@ -492,6 +492,7 @@ The `Job` object represents a generation task.
 - `credits` (integer, optional): Credits spent on this job.
 - `balance` (integer, optional): Google Flow credits left on the account after the job, read from Flow. Missing when Flow could not be read.
 - `results` (array): List of generated files (empty until job completes).
+- `modelUsed` (string, optional): The model the job really ran with. It differs from `request.model` when a configured default model Flow no longer offers was replaced by its successor, so a client can read what ran without parsing the note.
 - `note` (string, optional): Something worth telling the user about how the job ran, in words. Present when a configured default model Flow no longer offers was replaced by its successor, so the client can show why the job used a different model.
 - `error` (object, optional): Error details if the job failed.
   - `code` (string): Error code (e.g., "credits_over_job_limit", "agent_mode_on").

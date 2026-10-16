@@ -13,6 +13,8 @@ export interface FlowJobResult {
   results: JobResult[];
   credits: number;
   balance?: number;
+  /** The model the job ran with, which can differ from the requested one. */
+  modelUsed?: string;
   /** Set when a configured default model Flow no longer offers was swapped for its successor. */
   modelReplaced?: { from: string; to: string };
 }

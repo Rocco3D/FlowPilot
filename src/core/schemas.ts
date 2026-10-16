@@ -63,6 +63,8 @@ export const Job = z.object({
   /** Google Flow credits left on the account after the job, read from Flow. */
   balance: z.number().int().optional(),
   results: z.array(JobResult),
+  /** The model the job really used. It differs from `request.model` when a retired configured model was replaced. */
+  modelUsed: z.string().optional(),
   /** Something the user should know about how this job ran, in words. */
   note: z.string().optional(),
   error: JobError.optional(),

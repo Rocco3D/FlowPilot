@@ -4,7 +4,7 @@ import path from "node:path";
 import type { AddressInfo } from "node:net";
 import { Client as McpClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Client } from "../../src/cli/client.js";
 import { createMcpServer } from "../../src/server/mcp.js";
 
@@ -30,6 +30,8 @@ let polls = 0;
 /** When true the fake job never finishes, to exercise the wait limit. */
 let stall = false;
 let posted: unknown;
+/** The last configuration write the assistant asked for. */
+let written: unknown;
 let server: http.Server;
 let mcp: McpClient;
 
@@ -47,6 +49,14 @@ function handle(req: http.IncomingMessage, res: http.ServerResponse, raw: string
   if (url === "/selftest" && method === "POST") return reply(res, 200, { ok: true, checks: [] });
   if (url === "/doctor" && method === "POST")
     return reply(res, 200, { chromeRunning: true, connected: true });
+  if (url === "/config" && method === "GET")
+    return reply(res, 200, { outputs: 2, maxCreditsPerJob: 20, locale: "it" });
+  if (url.startsWith("/config/") && method === "PUT") {
+    const key = decodeURIComponent(url.slice("/config/".length));
+    const { value } = JSON.parse(raw) as { value: string };
+    written = { key, value };
+    return reply(res, 200, { [key]: value, outputs: 2, maxCreditsPerJob: 20 });
+  }
   if (url === "/jobs" && method === "POST") {
     posted = JSON.parse(raw);
     return reply(res, 201, { ...baseJob, status: "queued" });
@@ -109,6 +119,10 @@ afterAll(async () => {
 });
 
 describe("mcp server", () => {
+  beforeEach(() => {
+    written = undefined;
+  });
+
   it("lists the tools and calls list_models", async () => {
     const { tools } = await mcp.listTools();
     expect(tools.map((t) => t.name)).toContain("generate_video");
@@ -169,5 +183,39 @@ describe("mcp server", () => {
       required?: string[];
     };
     expect(model?.required).toEqual(["id"]);
+  });
+
+  it("reads the configuration with get_config", async () => {
+    const { isError, text } = await call("get_config");
+    expect(isError).toBeFalsy();
+    expect(JSON.parse(text)).toMatchObject({ outputs: 2, maxCreditsPerJob: 20 });
+  });
+
+  it("writes a setting the assistant is allowed to change", async () => {
+    const { isError, text } = await call("set_config", {
+      key: "defaultImageModel",
+      value: "Nano Banana 2",
+    });
+    expect(isError).toBeFalsy();
+    expect(JSON.parse(text)).toEqual({ defaultImageModel: "Nano Banana 2" });
+    expect(written).toEqual({ key: "defaultImageModel", value: "Nano Banana 2" });
+  });
+
+  it("refuses a credit limit, so an assistant cannot raise what it can spend", async () => {
+    const { tools } = await mcp.listTools();
+    const shape = tools.find((t) => t.name === "set_config")?.inputSchema as {
+      properties?: { key?: { enum?: string[] } };
+    };
+    expect(shape.properties?.key?.enum).toEqual([
+      "defaultVideoModel",
+      "defaultImageModel",
+      "outputs",
+      "locale",
+    ]);
+    for (const key of ["maxCreditsPerJob", "monthlyCreditLimit", "port"]) {
+      const { isError } = await call("set_config", { key, value: "500" });
+      expect(isError, `${key} should be refused`).toBe(true);
+    }
+    expect(written).toBeUndefined();
   });
 });

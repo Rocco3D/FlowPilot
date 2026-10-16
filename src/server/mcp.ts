@@ -38,6 +38,13 @@ const generateShape = {
   wait: z.boolean().default(true),
 };
 
+/**
+ * The only settings an assistant may write. The credit limits are deliberately absent: `set_config` is a tool call an
+ * assistant makes on its own, and a tool that can raise `maxCreditsPerJob` or `monthlyCreditLimit` is a way to spend
+ * without asking. `port` and the API token are not there either.
+ */
+const WRITABLE_KEYS = ["defaultVideoModel", "defaultImageModel", "outputs", "locale"] as const;
+
 type ToolResult = { content: { type: "text"; text: string }[]; isError?: boolean };
 
 const ok = (value: unknown): ToolResult => ({
@@ -177,6 +184,23 @@ export function createMcpServer(
     "Check that Chrome is running and signed in to Google Flow. When a newer FlowPilot version " +
       "exists, the result has an `update` field: tell the user its message.",
     () => client.doctor(),
+  );
+  toolNoArgs(
+    "get_config",
+    "Show the FlowPilot configuration: default models, outputs per job, credit limits, language and where " +
+      "results are saved.",
+    () => client.getConfig(),
+  );
+  tool(
+    "set_config",
+    `Change one FlowPilot setting. Only ${WRITABLE_KEYS.join(", ")} can be changed: the credit limits are not ` +
+      "writable from a tool call, because spending more needs the user, not the assistant. The setting takes " +
+      "effect on the next job.",
+    { key: z.enum(WRITABLE_KEYS), value: z.string() },
+    async ({ key, value }) => {
+      const updated = await client.setConfig(key, value);
+      return { [key]: updated[key] };
+    },
   );
 
   return server;
