@@ -71,7 +71,7 @@ Health check. No authentication required.
 
 ### POST /doctor
 
-Checks the current session status including Chrome state, API connection, and authentication. It also checks whether a newer FlowPilot version is available on GitHub.
+Checks the current session status including Chrome state, API connection, and authentication. It also checks whether a newer FlowPilot version is available on GitHub, and whether the configured default models are still offered by Flow. The model check needs the Flow page, so it opens the session like a job does; it is skipped, without failing the check, when the page cannot be read.
 
 **Response:**
 
@@ -86,7 +86,15 @@ Checks the current session status including Chrome state, API connection, and au
     "installed": "0.1.1",
     "latest": "0.1.2",
     "message": "FlowPilot 0.1.2 is available (installed: 0.1.1). Update with: npm install -g Rocco3D/FlowPilot (in a cloned repository: git pull, then npm install), then run: flowpilot service stop"
-  }
+  },
+  "configuredModels": [
+    {
+      "key": "defaultImageModel",
+      "configured": "Nano Banana 2",
+      "available": ["Nano Banana Pro", "Nano Banana 2 Lite", "Nano Banana 2.1"],
+      "suggestion": "Nano Banana 2.1"
+    }
+  ]
 }
 ```
 
@@ -101,6 +109,11 @@ Checks the current session status including Chrome state, API connection, and au
   - `installed` (string): Installed version.
   - `latest` (string): Version available on GitHub.
   - `message` (string): Human-readable notice with the update commands.
+- `configuredModels` (array, optional): Present only when a configured default model is no longer offered by Flow. Missing when every configured model is still available, when none is configured, or when the model list could not be read.
+  - `key` (string): Configuration key, `defaultVideoModel` or `defaultImageModel`.
+  - `configured` (string): The model name in the configuration.
+  - `available` (array of strings): The model names Flow offers right now.
+  - `suggestion` (string, optional): The next version of the same name, when Flow offers one. A job using the configured model will use it and the configuration will be updated; when missing, the job will fail and list what is available.
 
 ### POST /selftest
 
@@ -479,6 +492,7 @@ The `Job` object represents a generation task.
 - `credits` (integer, optional): Credits spent on this job.
 - `balance` (integer, optional): Google Flow credits left on the account after the job, read from Flow. Missing when Flow could not be read.
 - `results` (array): List of generated files (empty until job completes).
+- `note` (string, optional): Something worth telling the user about how the job ran, in words. Present when a configured default model Flow no longer offers was replaced by its successor, so the client can show why the job used a different model.
 - `error` (object, optional): Error details if the job failed.
   - `code` (string): Error code (e.g., "credits_over_job_limit", "agent_mode_on").
   - `message` (string): Human-readable message.

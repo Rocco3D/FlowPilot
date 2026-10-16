@@ -131,6 +131,23 @@ flowpilot models
 
 Questo legge l'elenco live da Flow.
 
+### Un modello che Flow non offre più
+
+I nomi dei modelli cambiano: `Nano Banana 2` è diventato `Nano Banana 2.1`. Chiedere un modello che Flow non offre
+fallisce il job con un messaggio che elenca quelli disponibili, e `flowpilot doctor` lo dice prima che tu spenda
+qualcosa.
+
+C'è un caso automatico. Se il job usa il modello configurato come predefinito (`defaultVideoModel` o
+`defaultImageModel`) e Flow offre la **versione successiva dello stesso nome**, FlowPilot usa quella, te lo dice nel
+risultato del job e corregge la configurazione, così succede una volta sola:
+
+```
+Il modello configurato Nano Banana 2 non è più offerto da Flow, quindi questo job ha usato Nano Banana 2.1. La configurazione è stata aggiornata.
+```
+
+Nient'altro viene inventato. Un modello chiesto esplicitamente con `--model` non viene mai sostituito, perché quello
+l'hai chiesto tu con quel nome: fallisce e elenca i modelli disponibili. Vedi [docs/known-issues.md](docs/known-issues.md).
+
 ### Protezione dei crediti
 
 FlowPilot protegge il tuo account con due limiti:
@@ -215,7 +232,7 @@ flowpilot config set outputDir ~/Video  # Cambia un'impostazione
 | `idleMinutes`        | 30                    | Minuti prima che il servizio si fermi automaticamente (0 = mai)              |
 | `showBrowser`        | false                 | Mostra la finestra di automazione (normalmente fuori schermo)                |
 
-Le modifiche a `idleMinutes`, `showBrowser` e `locale` valgono dal prossimo avvio del servizio (dopo `flowpilot stop` o una chiusura automatica). `defaultVideoModel`, `defaultImageModel` e `outputs` vengono lette a ogni job creato.
+Le modifiche a `idleMinutes`, `showBrowser` e `locale` valgono dal prossimo avvio del servizio (dopo `flowpilot stop` o una chiusura automatica). `defaultVideoModel`, `defaultImageModel` e `outputs` vengono lette a ogni job creato. FlowPilot riscrive `defaultVideoModel` e `defaultImageModel` quando Flow ritira il modello configurato e offre la versione successiva dello stesso nome; `outputs`, i limiti e la lingua li cambi solo tu.
 
 ## Lingue
 
@@ -263,7 +280,23 @@ FlowPilot usa la casella del prompt classica di Flow. Se in Flow è attiva la mo
 
 ### Se l'interfaccia di Flow cambia
 
-Tutti i selettori DOM per Flow si trovano in un solo file: `src/flow/selectors.ts`. Se Flow cambia il suo layout, FlowPilot fallirà a un passo specifico. I selettori possono essere aggiornati senza cambiare nessun altro codice.
+Tutti i selettori DOM per Flow si trovano in un solo file: `src/flow/selectors.ts`. Se Flow cambia il suo layout, FlowPilot fallirà a un passo specifico. I selettori possono essere aggiornati senza cambiare nessun altro codice. [docs/flow-ui.md](docs/flow-ui.md) descrive cosa controlla FlowPilot nella pagina, come la usa un job e cosa si vede da fuori quando il layout cambia.
+
+### Se Chrome era già aperto con il profilo
+
+Se hai aperto tu Chrome sul profilo di FlowPilot, FlowPilot lo chiude e riapre lo stesso profilo con una connessione di
+debug, e `doctor` lo dice una volta:
+
+```
+Chrome era già in esecuzione sul profilo, quindi FlowPilot lo ha chiuso e riaperto con una connessione di debug.
+```
+
+Le schede aperte in quella finestra si perdono. È il comportamento previsto, non un errore.
+
+### Cosa non funziona
+
+[docs/known-issues.md](docs/known-issues.md) elenca i limiti da conoscere: un job alla volta, solo i risultati prodotti
+dal job in corso, nessun retry automatico, Flow pilotato in inglese e la chiusura per inattività.
 
 ### Log
 

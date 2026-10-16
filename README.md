@@ -131,6 +131,22 @@ flowpilot models
 
 This reads the live list from Flow.
 
+### A model Flow no longer offers
+
+Model names change: `Nano Banana 2` became `Nano Banana 2.1`. Asking for a model Flow does not offer fails the job
+with a message that lists what your account can use, and `flowpilot doctor` says the same before you spend anything.
+
+There is one automatic case. When the job uses the model configured as default (`defaultVideoModel` or
+`defaultImageModel`) and Flow offers the **next version of the same name**, FlowPilot uses that one, tells you on
+the job result, and updates your configuration so it happens once:
+
+```
+Il modello configurato Nano Banana 2 non è più offerto da Flow, quindi questo job ha usato Nano Banana 2.1. La configurazione è stata aggiornata.
+```
+
+Nothing else is guessed. A model asked for explicitly with `--model` is never replaced, because you asked for that
+one by name: it fails and lists the available models. See [docs/known-issues.md](docs/known-issues.md).
+
 ### Credit guard
 
 FlowPilot protects your account with two limits:
@@ -217,7 +233,7 @@ flowpilot config set outputDir ~/Videos # Change a setting
 
 With no `defaultVideoModel` or `defaultImageModel` the model already selected in Flow is used.
 
-Changes to `idleMinutes`, `showBrowser` and `locale` take effect the next time the service starts (after `flowpilot stop` or an idle shutdown). `defaultVideoModel`, `defaultImageModel` and `outputs` are read every time a job is created.
+Changes to `idleMinutes`, `showBrowser` and `locale` take effect the next time the service starts (after `flowpilot stop` or an idle shutdown). `defaultVideoModel`, `defaultImageModel` and `outputs` are read every time a job is created. FlowPilot writes `defaultVideoModel` and `defaultImageModel` back when Flow retires the configured model and offers the next version of the same name; `outputs`, the limits and the language are only ever changed by you.
 
 ## Languages
 
@@ -265,7 +281,23 @@ FlowPilot uses Flow's classic prompt box. If Flow's Agent mode is on, or its cha
 
 ### If Flow's UI changes
 
-All DOM selectors for Flow live in one file: `src/flow/selectors.ts`. If Flow changes its layout, FlowPilot will fail at a specific step. The selectors can be updated without changing any other code.
+All DOM selectors for Flow live in one file: `src/flow/selectors.ts`. If Flow changes its layout, FlowPilot will fail at a specific step. The selectors can be updated without changing any other code. [docs/flow-ui.md](docs/flow-ui.md) describes what FlowPilot drives on the page, how a job uses it, and what a layout change looks like from the outside.
+
+### If Chrome was already open on the profile
+
+If you opened Chrome yourself on the FlowPilot profile, FlowPilot closes it and reopens the same profile with a
+debugging connection, and `doctor` says so once:
+
+```
+Chrome was already open on the profile, so FlowPilot closed it and reopened it with a debugging connection.
+```
+
+Tabs open in that window are lost. This is expected, not a failure.
+
+### Things that do not work
+
+[docs/known-issues.md](docs/known-issues.md) lists the limits worth knowing: one job at a time, only the results a
+job just produced, no automatic retry, Flow driven in English, and the idle shutdown.
 
 ### Logs
 

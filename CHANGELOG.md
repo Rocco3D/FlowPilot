@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.3] - 2026-10-16
+
+### Added
+
+- A configured default model that Flow no longer offers is replaced by the next version of the same name (`Nano Banana 2` to `Nano Banana 2.1`). The job result says so (`note`), the configuration is updated once and both steps are logged. A model asked for explicitly with `--model` is never replaced, and nothing is guessed when Flow does not offer the same family in a higher version
+- `doctor` reports the configured default models that Flow no longer offers, with the successor that will be used, before any job fails on them
+- `--confirm` is a real flag on `video` and `image`, and it is what the credit limit messages tell you to use
+- Results are matched to the job by their stable media id, so a job never picks up results left in the project by an earlier one
+
+### Changed
+
+- `--max-credits` can only lower the configured per-job limit, never raise it
+- `defaultVideoModel`, `defaultImageModel`, `outputs` and `locale` are read as documented; the first three were documented but read by nothing
+- The session status says when Chrome was already open on the profile and FlowPilot restarted it, instead of the user seeing a window disappear for no reason
+- The MCP tools start the service again when they find it stopped, accept calls without arguments, and wait at most 45 seconds for a job before reporting it as still running
+
+### Fixed
+
+- The local HTTP API rejects requests whose `Host` is not the service port, so a page in the browser can no longer reach it
+- The six HTTP errors answered with the name of the translation key instead of a sentence
+- A Chrome opened by the user on the FlowPilot profile was invisible to FlowPilot: it is now found, closed and reopened with a debugging connection, instead of the launch landing in a tab of the running window and leaving no debugging port
+
 ## [0.1.2] - 2026-10-06
 
 ### Added
