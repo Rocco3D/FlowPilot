@@ -188,8 +188,18 @@ export function createMcpServer(
   toolNoArgs(
     "get_config",
     "Show the FlowPilot configuration: default models, outputs per job, credit limits, language and where " +
-      "results are saved.",
-    () => client.getConfig(),
+      "results are saved. A default model or a language that is not set is null.",
+    async () => {
+      const config = await client.getConfig();
+      // A setting that is not set disappears from the JSON, and "not set" is something an assistant has to be
+      // able to see: it is what makes a job use the model already selected in Flow.
+      return {
+        ...config,
+        defaultVideoModel: config.defaultVideoModel ?? null,
+        defaultImageModel: config.defaultImageModel ?? null,
+        locale: config.locale ?? null,
+      };
+    },
   );
   tool(
     "set_config",

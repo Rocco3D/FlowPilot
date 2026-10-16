@@ -188,7 +188,14 @@ describe("mcp server", () => {
   it("reads the configuration with get_config", async () => {
     const { isError, text } = await call("get_config");
     expect(isError).toBeFalsy();
-    expect(JSON.parse(text)).toMatchObject({ outputs: 2, maxCreditsPerJob: 20 });
+    // defaultVideoModel is not set on the fake service, and "not set" has to be visible, not missing.
+    expect(JSON.parse(text)).toEqual({
+      outputs: 2,
+      maxCreditsPerJob: 20,
+      locale: "it",
+      defaultVideoModel: null,
+      defaultImageModel: null,
+    });
   });
 
   it("writes a setting the assistant is allowed to change", async () => {
