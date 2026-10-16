@@ -103,7 +103,9 @@ beforeAll(async () => {
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as AddressInfo).port;
   const [a, b] = InMemoryTransport.createLinkedPair();
-  await createMcpServer(new Client(port), 5, 40).connect(b);
+  // The wait limit must cover two polls even when every test file runs at once; 40 ms did not, and made the
+  // waiting test fail at random.
+  await createMcpServer(new Client(port), 5, 1000).connect(b);
   mcp = new McpClient({ name: "test", version: "0" });
   await mcp.connect(a);
 });
