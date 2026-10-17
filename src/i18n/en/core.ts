@@ -13,5 +13,5 @@ export default {
   "credits.overMonthlyLimit":
     "Monthly credit limit exceeded: {spent} spent, this job costs {cost}, limit is {limit}.",
   "update.available":
-    "FlowPilot {latest} is available (installed: {installed}). Update with: npm install -g Rocco3D/FlowPilot (in a cloned repository: git pull, then npm install), then run: flowpilot service stop",
+    "FlowPilot {latest} is available (installed: {installed}). Update with: git pull, npm install and npm run build in the FlowPilot folder, then run: flowpilot service stop",
 } as const;

@@ -12,17 +12,12 @@ FlowPilot is a local service that drives Google Flow (AI image and video generat
 
 - Windows 10/11, or macOS/Linux (first-class Windows support)
 - Node.js 22.12 or newer
+- Git
 - Google Chrome
 - A Google account with access to Google Flow
 - Google AI subscription credits for video generation (image generation with Nano Banana models costs 0 credits)
 
 ## Install
-
-```bash
-npm install -g Rocco3D/FlowPilot
-```
-
-Or install from source:
 
 ```bash
 git clone https://github.com/Rocco3D/FlowPilot.git
@@ -32,17 +27,19 @@ npm run build
 npm link
 ```
 
-After installation, `flowpilot` is available in your terminal.
+After installation, `flowpilot` is available in your terminal. Keep the `FlowPilot` folder: the `flowpilot` command runs from it.
 
 ### Update
 
-`flowpilot doctor` (and the `doctor` MCP tool) tells you when a newer version is available on GitHub. To update, run the install command again:
+`flowpilot doctor` (and the `doctor` MCP tool) tells you when a newer version is available on GitHub. To update, run these commands in the `FlowPilot` folder:
 
 ```bash
-npm install -g Rocco3D/FlowPilot
+git pull
+npm install
+npm run build
 ```
 
-From source, run `git pull`, then `npm install`. In both cases, run `flowpilot service stop` afterwards: the next `flowpilot` command starts the new version. If you use FlowPilot from an AI assistant, restart the assistant too, so that its MCP server runs the new version.
+Then run `flowpilot service stop`: the next `flowpilot` command starts the new version. If you use FlowPilot from an AI assistant, restart the assistant too, so that its MCP server runs the new version.
 
 Every update raises the version by 0.0.1 (for example 0.1.0 to 0.1.1). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 

@@ -85,7 +85,7 @@ Checks the current session status including Chrome state, API connection, and au
   "update": {
     "installed": "0.1.1",
     "latest": "0.1.2",
-    "message": "FlowPilot 0.1.2 is available (installed: 0.1.1). Update with: npm install -g Rocco3D/FlowPilot (in a cloned repository: git pull, then npm install), then run: flowpilot service stop"
+    "message": "FlowPilot 0.1.2 is available (installed: 0.1.1). Update with: git pull, npm install and npm run build in the FlowPilot folder, then run: flowpilot service stop"
   },
   "configuredModels": [
     {
