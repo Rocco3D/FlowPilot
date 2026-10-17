@@ -29,6 +29,8 @@ npm link
 
 After installation, `flowpilot` is available in your terminal. Keep the `FlowPilot` folder: the `flowpilot` command runs from it.
 
+If you installed FlowPilot with `npm install -g Rocco3D/FlowPilot`, run `npm uninstall -g flowpilot-cli` first, then install it as shown above.
+
 ### Update
 
 `flowpilot doctor` (and the `doctor` MCP tool) tells you when a newer version is available on GitHub. To update, run these commands in the `FlowPilot` folder:

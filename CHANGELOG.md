@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.4] - 2026-10-17
+
+### Changed
+
+- FlowPilot is installed from a cloned repository (`git clone`, `npm install`, `npm run build`, `npm link`) instead of `npm install -g Rocco3D/FlowPilot`. npm 12 refuses packages fetched from git by default (`EALLOWGIT`), and npm 10 on Windows installed the package without its compiled files, so the old command left a `flowpilot` that did not start
+- The update message of `doctor` says to run `git pull`, `npm install` and `npm run build` in the FlowPilot folder
+- The `prepare` script is gone: npm 12 blocks it, and the build is now an explicit step of installing and updating
+
 ## [0.1.3] - 2026-10-16
 
 ### Added
