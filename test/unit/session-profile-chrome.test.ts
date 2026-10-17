@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { profileDir as resolveProfileDir } from "../../src/core/paths.js";
 
 const findChromeProcesses = vi.fn<() => Promise<{ pid: number }[]>>();
 const closeChromeGracefully = vi.fn<(processes: { pid: number }[]) => Promise<void>>();
@@ -45,8 +46,9 @@ beforeEach(() => {
   );
   fs.mkdirSync(localAppData, { recursive: true });
   process.env.LOCALAPPDATA = localAppData;
+  process.env.XDG_DATA_HOME = localAppData;
   process.env.FLOWPILOT_LANG = "en";
-  profileDir = path.join(localAppData, "FlowPilot", "profiles", "default");
+  profileDir = resolveProfileDir("default");
   findChromeProcesses.mockReset().mockResolvedValue([]);
   closeChromeGracefully.mockReset().mockResolvedValue(undefined);
   connectOverCDP.mockClear();
