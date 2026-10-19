@@ -12,6 +12,14 @@ const START_TIMEOUT_MS = 15_000;
 const STOP_TIMEOUT_MS = 15_000;
 const POLL_MS = 250;
 
+/**
+ * The service always runs from the build output, wherever the CLI itself runs from:
+ * the package root is two levels up from `src/cli` and from `dist/cli` alike.
+ */
+export function serviceEntryPath(): string {
+  return fileURLToPath(new URL("../../dist/server/main.js", import.meta.url));
+}
+
 export interface ServiceStatus {
   running: boolean;
   version?: string;
@@ -35,7 +43,12 @@ export async function ensureServiceRunning(client: Client): Promise<void> {
   fs.mkdirSync(logDir, { recursive: true });
   const logFile = path.join(logDir, "service-stdout.log");
   const fd = fs.openSync(logFile, "a");
-  const entry = fileURLToPath(new URL("../server/main.js", import.meta.url));
+  const entry = serviceEntryPath();
+  if (!fs.existsSync(entry)) {
+    throw new FlowPilotError("service_build_missing", "cli.error.serviceBuildMissing", {
+      path: entry,
+    });
+  }
   const child = spawn(process.execPath, [entry], {
     detached: true,
     stdio: ["ignore", fd, fd],

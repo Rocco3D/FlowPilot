@@ -21,6 +21,18 @@ export interface Credits {
   flowBalance?: FlowBalance;
 }
 
+/** Requests that only read the service answer in moments. */
+const DEFAULT_TIMEOUT_MS = 60_000;
+/** Requests that drive the browser (doctor, selftest, models) and file downloads take longer. */
+const LONG_TIMEOUT_MS = 300_000;
+
+export interface ClientOptions {
+  /** Timeout of the plain requests; for tests. */
+  timeoutMs?: number;
+  /** Timeout of the browser-driven requests and of the file downloads; for tests. */
+  longTimeoutMs?: number;
+}
+
 export function resolvePort(port?: number): number {
   return port ?? loadConfig().port;
 }
@@ -34,9 +46,25 @@ function readToken(): string | undefined {
 }
 
 export class Client {
-  constructor(readonly port: number) {}
+  constructor(
+    readonly port: number,
+    private readonly options: ClientOptions = {},
+  ) {}
 
-  private async request(method: string, route: string, body?: unknown): Promise<Response> {
+  private get defaultTimeoutMs(): number {
+    return this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  }
+
+  private get longTimeoutMs(): number {
+    return this.options.longTimeoutMs ?? LONG_TIMEOUT_MS;
+  }
+
+  private async request(
+    method: string,
+    route: string,
+    body?: unknown,
+    timeoutMs: number = this.defaultTimeoutMs,
+  ): Promise<Response> {
     const headers: Record<string, string> = {};
     const token = readToken();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -47,8 +75,17 @@ export class Client {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
       });
-    } catch {
+    } catch (err) {
+      // A service that never answers must not leave the command waiting forever.
+      const name = err instanceof Error ? err.name : "";
+      if (name === "TimeoutError" || name === "AbortError") {
+        throw new FlowPilotError("service_timeout", "cli.error.serviceTimeout", {
+          port: this.port,
+          seconds: Math.round(timeoutMs / 1000),
+        });
+      }
       throw new FlowPilotError("service_unreachable", "cli.error.serviceUnreachable", {
         port: this.port,
       });
@@ -63,14 +100,19 @@ export class Client {
     return res;
   }
 
-  private async json<T>(method: string, route: string, body?: unknown): Promise<T> {
-    return (await (await this.request(method, route, body)).json()) as T;
+  private async json<T>(
+    method: string,
+    route: string,
+    body?: unknown,
+    timeoutMs?: number,
+  ): Promise<T> {
+    return (await (await this.request(method, route, body, timeoutMs)).json()) as T;
   }
 
   health = () => this.json<{ ok: boolean; version: string }>("GET", "/health");
-  doctor = () => this.json<SessionStatus>("POST", "/doctor");
-  selftest = () => this.json<SelftestReport>("POST", "/selftest");
-  models = () => this.json<ModelInfo[]>("GET", "/models");
+  doctor = () => this.json<SessionStatus>("POST", "/doctor", undefined, this.longTimeoutMs);
+  selftest = () => this.json<SelftestReport>("POST", "/selftest", undefined, this.longTimeoutMs);
+  models = () => this.json<ModelInfo[]>("GET", "/models", undefined, this.longTimeoutMs);
   createJob = (req: JobRequestInput) => this.json<Job>("POST", "/jobs", req);
   listJobs = () => this.json<Job[]>("GET", "/jobs");
   getJob = (id: string) => this.json<Job>("GET", `/jobs/${encodeURIComponent(id)}`);
@@ -82,7 +124,12 @@ export class Client {
   shutdown = () => this.json<{ ok: true }>("POST", "/shutdown");
 
   async jobFile(id: string, index: number): Promise<Buffer> {
-    const res = await this.request("GET", `/jobs/${encodeURIComponent(id)}/files/${index}`);
+    const res = await this.request(
+      "GET",
+      `/jobs/${encodeURIComponent(id)}/files/${index}`,
+      undefined,
+      this.longTimeoutMs,
+    );
     return Buffer.from(await res.arrayBuffer());
   }
 }

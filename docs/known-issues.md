@@ -67,6 +67,9 @@ The service shuts down after `idleMinutes` without traffic (30 by default, `0` d
 opened. The CLI and the MCP server start it again on the next command, so nothing has to be kept running by hand;
 the first command after the pause takes a few seconds longer while Chrome starts.
 
+Every command that talks to the service gives up if the service does not answer (60 seconds for the plain requests,
+300 for the ones that drive Chrome) and says so, instead of waiting forever.
+
 ## Chrome on the FlowPilot profile
 
 If you open Chrome yourself on the FlowPilot profile, FlowPilot will not use that window: Chrome only opens a

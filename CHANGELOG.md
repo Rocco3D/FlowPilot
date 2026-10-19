@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- The CLI no longer waits forever for a service that does not answer: every request to the local API has a timeout (60 seconds for the plain requests, 300 for the ones that drive the browser and for the file downloads), and a service that stays silent ends the command with a `service_timeout` error instead of hanging
+- The CLI starts the service from the build output (`dist/server/main.js`) whichever directory the CLI runs from: run from the sources it looked for `src/server/main.js`, and the service died with `Cannot find module` instead of starting. A missing build now says what to run
+
 ## [0.1.4] - 2026-10-17
 
 ### Changed

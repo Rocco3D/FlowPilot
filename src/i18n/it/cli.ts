@@ -9,6 +9,10 @@ export default {
   "error.serviceUnreachable":
     "Non riesco a raggiungere il servizio FlowPilot sulla porta {port}. Prova: flowpilot service start",
   "error.serviceStartFailed": "Il servizio FlowPilot non si è avviato in tempo. Vedi il log: {log}",
+  "error.serviceTimeout":
+    "Il servizio FlowPilot sulla porta {port} non ha risposto entro {seconds} secondi.",
+  "error.serviceBuildMissing":
+    "Il servizio FlowPilot non è compilato ({path}). Compilalo con: npm run build",
   "error.server": "{message}",
   "error.invalidNumber": "Non è un numero valido: {value}",
   "doctor.description": "Controlla Chrome e la sessione Google Flow",
