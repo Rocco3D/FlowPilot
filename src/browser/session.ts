@@ -216,11 +216,20 @@ export class BrowserSession {
         const { windowId } = await cdp.send("Browser.getWindowForTarget");
         // Never minimize: Flow's menus stop working in a minimized window. Hidden means off-screen.
         await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal" } });
-        const offset = this.headed ? 100 : -32000;
-        await cdp.send("Browser.setWindowBounds", {
-          windowId,
-          bounds: { left: offset, top: offset, width: 1280, height: 800 },
-        });
+        // Shown means the left half of the screen, so the user can watch FlowPilot work beside other windows.
+        const bounds = this.headed
+          ? await page.evaluate(() => {
+              // Chrome adds where the usable area starts, which the standard Screen type leaves out.
+              const s = screen as Screen & { availLeft: number; availTop: number };
+              return {
+                left: s.availLeft,
+                top: s.availTop,
+                width: Math.floor(s.availWidth / 2),
+                height: s.availHeight,
+              };
+            })
+          : { left: -32000, top: -32000, width: 1280, height: 800 };
+        await cdp.send("Browser.setWindowBounds", { windowId, bounds });
       } finally {
         await cdp.detach().catch(() => undefined);
       }
