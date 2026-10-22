@@ -56,7 +56,8 @@ export default {
   "generate.characterOption": "Nomi dei personaggi",
   "generate.projectOption": "Nome del progetto Flow",
   "generate.outOption": "Cartella di output",
-  "generate.upscaleOption": "Aumenta a 1080p o 4k",
+  "generate.upscaleOption":
+    "Qualità del download: original, 1080p (2K per le immagini) o 4k; se non indicata, l'upscale 1080p/2K",
   "generate.maxCreditsOption":
     "Rifiuta di eseguire se il job costa più crediti di questo (può solo abbassare il limite configurato)",
   "generate.confirmOption": "Consenti al job di superare i limiti di crediti",

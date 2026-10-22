@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Client, resolvePort } from "../cli/client.js";
 import { ensureServiceRunning } from "../cli/service-control.js";
 import { FlowPilotError } from "../core/errors.js";
-import { JobRequest, type Job } from "../core/schemas.js";
+import { JobRequest, Upscale, type Job } from "../core/schemas.js";
 
 const { version } = createRequire(import.meta.url)("../../package.json") as { version: string };
 
@@ -156,6 +156,31 @@ export function createMcpServer(
     generateShape,
     async ({ wait, ...req }) =>
       finish(await client.createJob(JobRequest.parse({ ...req, type: "image" })), wait),
+  );
+
+  tool(
+    "list_media",
+    "List the images and videos already in a Google Flow project, with id, type and title. `project` is a project " +
+      "name or id; left out, the most recent project. It spends no credits. When a job is running, the list waits " +
+      "for it to finish and `queued` is true.",
+    { project: z.string().optional() },
+    ({ project }) => client.listMedia(project),
+  );
+
+  tool(
+    "download_media",
+    "Download an image or video already in a Google Flow project, by its id from list_media or from the error of a " +
+      "failed job. It generates nothing and spends no credits: use it instead of generating the same media again. " +
+      '`upscale` is "original", "1080p" (2K for images) or "4k"; left out, the 1080p/2K upscale. The file is saved ' +
+      `as <project>-media-<id>. ${WAIT}`,
+    {
+      mediaId: z.string(),
+      project: z.string().optional(),
+      outDir: z.string().optional(),
+      upscale: Upscale.optional(),
+      wait: z.boolean().default(true),
+    },
+    async ({ wait, ...req }) => finish(await client.downloadMedia(req), wait),
   );
 
   const idShape = { id: z.string() };

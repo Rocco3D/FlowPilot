@@ -25,7 +25,7 @@ describe("JobStore", () => {
     const job = store.create({ type: "image", prompt: "a cat", outputs: 1 });
     expect(job.status).toBe("queued");
     expect(job.results).toEqual([]);
-    expect(job.request.outputs).toBe(1);
+    expect(job.request).toMatchObject({ outputs: 1 });
     expect(job.id).toMatch(/^\d{8}-\d{9}-[0-9a-f]{4}$/);
     expect(Number.isNaN(Date.parse(job.createdAt))).toBe(false);
     expect(fs.existsSync(path.join(dir, "lazy", `${job.id}.json`))).toBe(true);
@@ -35,7 +35,7 @@ describe("JobStore", () => {
   it("applies schema defaults and rejects invalid requests", () => {
     const store = new JobStore(dir);
     const job = store.create({ type: "video", prompt: "x" } as never);
-    expect(job.request.outputs).toBe(1);
+    expect(job.request).toMatchObject({ outputs: 1 });
     expect(() => store.create({ type: "video", prompt: "" } as never)).toThrow();
   });
 

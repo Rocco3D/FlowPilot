@@ -38,15 +38,47 @@ at a time, and two jobs sharing the page would read each other's results.
 The consequence to know: two jobs cannot shorten each other's waiting time, and a long video blocks every image
 queued after it.
 
-## Only the results a job just produced
+## Media already in Flow
 
 A job downloads the files Flow produced while it was running, matched to the results that appeared during that
-window. FlowPilot has no way to fetch an older generation later: a video made yesterday, or one made in another
-project, is not reachable from here. If you need those files, download them from Flow while they are there, or keep
-the folder FlowPilot already wrote them to.
+window. Anything else already in a Flow project, a video made yesterday or an image you uploaded, is reached through
+the HTTP API (`GET /media`, `POST /media/download`) or the MCP tools (`list_media`, `download_media`): the list gives
+each media's id, and the download fetches it without generating anything or spending credits. There is no CLI
+command for it.
 
-There is also no automatic retry. A failed job stays failed and the queue moves on to the next one; run it again
+What to know:
+
+- The list opens each media in Flow's viewer to read its id, so it takes about two seconds per media, and it waits
+  for a running job first. Behind a long video the MCP server waits up to 45 minutes for it, but the assistant's own
+  client may stop waiting sooner; asking again works.
+- A video has two ids in Flow: the one in its address, which the list gives, and the one a job records. The download
+  accepts both, and the file name uses the one you asked with: `<project>-media-<id>`.
+- Flow reuses titles, so the list can show two media with the same title. Use the id.
+
+There is no automatic retry. A failed job stays failed and the queue moves on to the next one; run it again
 yourself once you know why it failed.
+
+## Download quality
+
+Results are downloaded upscaled: 2K for images, 1080p for videos. In October 2026 these upscales cost no credits on
+the owner's plan; Flow makes them on request, so a download takes about 10 seconds longer for an image and up to a
+minute for a video. 4K is downloaded only when asked for with `upscale` set to `4k`, because it may cost credits and
+Flow offers it only on some plans. `original` asks for the file as generated.
+
+A quality Flow does not offer, or offers only after a plan upgrade, fails the job (`download_tier_locked`,
+`upscale_unavailable`) instead of downloading another one: FlowPilot never hands over a quality you did not ask for.
+A file you uploaded to Flow has no quality to choose and is downloaded as it is.
+
+A downloaded file counts only when it is on disk and not empty; otherwise the job fails with `download_failed`. When
+a job fails after Flow already generated its media, the error lists their ids, so they can be downloaded instead of
+generated again.
+
+## A result Flow made but did not show
+
+Once, in October 2026, an image job ended with `generation_timeout` after 15 minutes although Flow had generated the
+image: it was in the project, but FlowPilot never saw it appear on the page. Image jobs ran fine on the next five
+attempts, and the cause is not known. If it happens, the credits are already spent and the media is in Flow:
+download it with `POST /media/download` or `download_media` instead of generating it again.
 
 ## Flow's Agent mode must be off
 
@@ -67,8 +99,9 @@ The service shuts down after `idleMinutes` without traffic (30 by default, `0` d
 opened. The CLI and the MCP server start it again on the next command, so nothing has to be kept running by hand;
 the first command after the pause takes a few seconds longer while Chrome starts.
 
-Every command that talks to the service gives up if the service does not answer (60 seconds for the plain requests,
-300 for the ones that drive Chrome) and says so, instead of waiting forever.
+Every CLI command and MCP tool call that talks to the service gives up if the service does not answer (60 seconds for the plain requests,
+300 for the ones that drive Chrome, 45 minutes for the media list, which waits for a running job) and says so, instead
+of waiting forever.
 
 ## Chrome on the FlowPilot profile
 

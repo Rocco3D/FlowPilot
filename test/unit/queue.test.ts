@@ -53,6 +53,26 @@ describe("JobQueue", () => {
     expect(state.order).toEqual(jobs.map((j) => j.id));
   });
 
+  it("runs an exclusive task after the running job, ahead of the queued ones, and says it waited", async () => {
+    const { driver, state } = tracking(new FakeDriver({ delayMs: 30 }));
+    const queue = new JobQueue(driver, new JobStore(dir));
+    const first = queue.enqueue(req);
+    await new Promise((r) => setTimeout(r, 10));
+    const second = queue.enqueue(req);
+    const task = await queue.exclusive(() => {
+      state.order.push("task");
+      return Promise.resolve("listed");
+    });
+    await queue.waitFor(second.id);
+    expect(task).toEqual({ value: "listed", queued: true });
+    expect(state.order).toEqual([first.id, "task", second.id]);
+  });
+
+  it("runs an exclusive task at once when no job is running", async () => {
+    const queue = new JobQueue(new FakeDriver(), new JobStore(dir));
+    expect(await queue.exclusive(() => Promise.resolve(1))).toEqual({ value: 1, queued: false });
+  });
+
   it("stores results, credits and timestamps on success", async () => {
     const queue = new JobQueue(new FakeDriver(), new JobStore(dir));
     const job = queue.enqueue({ type: "video", prompt: "x", outputs: 2 });

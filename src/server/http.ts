@@ -11,7 +11,7 @@ import { FlowPilotError } from "../core/errors.js";
 import type { Logger } from "../core/logger.js";
 import type { JobStore } from "../core/jobs.js";
 import type { JobQueue } from "../core/queue.js";
-import { JobRequest, type UpdateInfo } from "../core/schemas.js";
+import { JobRequest, MediaDownloadRequest, type UpdateInfo } from "../core/schemas.js";
 import { isAuthorized } from "./auth.js";
 
 export interface HttpDeps {
@@ -138,10 +138,8 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (!address || !isLocalHost(req.headers.host, address.port)) throw badHost();
 
     const method = req.method ?? "GET";
-    const parts = new URL(req.url ?? "/", "http://localhost").pathname
-      .split("/")
-      .filter(Boolean)
-      .map(decodeURIComponent);
+    const url = new URL(req.url ?? "/", "http://localhost");
+    const parts = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
     const [a, b, c, d] = parts;
     const is = (m: string, n: number, head: string) =>
       method === m && parts.length === n && a === head;
@@ -185,6 +183,17 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (is("GET", 2, "jobs")) return send(res, 200, requireJob(b!));
     if (is("DELETE", 2, "jobs")) return send(res, 200, queue.cancel(b!));
     if (is("GET", 4, "jobs") && c === "files") return sendFile(res, b!, d!);
+    if (is("GET", 1, "media")) {
+      // The list drives the Flow page, so it waits for a running job and says so.
+      const project = url.searchParams.get("project") ?? undefined;
+      const { value, queued } = await queue.exclusive(() => driver.listMedia(project));
+      return send(res, 200, { ...value, queued });
+    }
+    if (is("POST", 2, "media") && b === "download") {
+      const body = MediaDownloadRequest.omit({ type: true }).parse(await readJson(req));
+      const outDir = body.outDir ?? loadConfig(deps.configDir).outputDir;
+      return send(res, 201, queue.enqueue({ ...body, type: "download", outDir }));
+    }
     if (is("GET", 1, "credits")) {
       const cfg = loadConfig(deps.configDir);
       const total = monthTotal(undefined, deps.dataDir);

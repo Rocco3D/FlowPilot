@@ -3,6 +3,7 @@ import type {
   Job,
   JobResult,
   JobStatus,
+  MediaInfo,
   ModelInfo,
   SelftestReport,
   SessionStatus,
@@ -27,9 +28,13 @@ export interface FlowDriver {
   selftest(): Promise<SelftestReport>;
   /** Lists the models available to the signed-in account. */
   listModels(): Promise<ModelInfo[]>;
+  /** Lists the media of a project (by id or name; the most recent one when left out). */
+  listMedia(
+    project?: string,
+  ): Promise<{ project: { id: string; name: string }; media: MediaInfo[] }>;
   /**
    * Runs one job to completion and returns the downloaded files, the credits spent and, when
-   * Flow shows it, the account balance left afterwards.
+   * Flow shows it, the account balance left afterwards. A download job only downloads a media already in Flow.
    */
   run(
     job: Job,

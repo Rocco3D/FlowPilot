@@ -8,7 +8,10 @@ import type {
   FlowBalance,
   Job,
   JobResult,
+  JobRequest,
   JobStatus,
+  MediaDownloadRequest,
+  MediaInfo,
   ModelInfo,
   SelftestReport,
   SessionStatus,
@@ -16,13 +19,21 @@ import type {
 import { t } from "../i18n/index.js";
 import { readBalance } from "./balance.js";
 import { clearComposer } from "./cleanup.js";
-import { downloadResult, writeSummary } from "./download.js";
+import { downloadMedia, downloadResult, writeSummary } from "./download.js";
 import type { FlowDriver, FlowJobResult } from "./driver.js";
 import { discoverModels } from "./models.js";
-import { createProject, isSignedIn, listProjects, openHome, openProject } from "./navigation.js";
+import { listMedia } from "./media.js";
+import {
+  type ProjectRef,
+  createProject,
+  isSignedIn,
+  listProjects,
+  openHome,
+  openProject,
+} from "./navigation.js";
 import { fillPrompt } from "./prompt.js";
 import { assertFilesExist, attachReferences, planReferences } from "./references.js";
-import { snapshotResults, waitForResults } from "./results.js";
+import { type ResultItem, snapshotResults, waitForResults } from "./results.js";
 import { runSelftest } from "./selftest.js";
 import {
   applySettings,
@@ -127,7 +138,9 @@ export class RealFlowDriver implements FlowDriver {
   ): Promise<FlowJobResult> {
     this.running = true;
     try {
-      return await this.runJob(job, onProgress, onSpend);
+      const { request } = job;
+      if (request.type === "download") return await this.downloadMedia(request, onProgress);
+      return await this.runJob(job, request, onProgress, onSpend);
     } finally {
       this.running = false;
     }
@@ -138,12 +151,37 @@ export class RealFlowDriver implements FlowDriver {
     return this.lastBalance;
   }
 
+  async listMedia(project?: string): Promise<{ project: ProjectRef; media: MediaInfo[] }> {
+    this.running = true;
+    try {
+      const page = await this.session.page();
+      const opened = await this.openExistingProject(page, project);
+      return { project: opened, media: await listMedia(page) };
+    } finally {
+      this.running = false;
+    }
+  }
+
+  private async downloadMedia(
+    request: MediaDownloadRequest,
+    onProgress?: (status: JobStatus) => void,
+  ): Promise<FlowJobResult> {
+    const page = await this.session.page();
+    const project = await this.openExistingProject(page, request.project);
+    onProgress?.("downloading");
+    const file = await downloadMedia(page, project, request.mediaId, {
+      upscale: request.upscale,
+      outDir: request.outDir ?? loadConfig().outputDir,
+    });
+    return { results: [{ ...file, mediaId: request.mediaId }], credits: 0 };
+  }
+
   private async runJob(
     job: Job,
+    request: JobRequest,
     onProgress?: (status: JobStatus) => void,
     onSpend?: (credits: number) => void,
   ): Promise<FlowJobResult> {
-    const request = job.request;
     const references = planReferences(request);
     assertFilesExist(references);
     const config = loadConfig();
@@ -172,8 +210,9 @@ export class RealFlowDriver implements FlowDriver {
     recordSpend({ jobId: job.id, model, credits: cost, at: new Date().toISOString() });
     onSpend?.(cost);
     const projectUrl = page.url();
+    let items: ResultItem[] = [];
     try {
-      const items = await waitForResults(page, request.type, before, request.outputs);
+      items = await waitForResults(page, request.type, before, request.outputs);
 
       onProgress?.("downloading");
       const outDir = request.outDir ?? config.outputDir;
@@ -206,10 +245,12 @@ export class RealFlowDriver implements FlowDriver {
       };
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
+      // The media Flow already made can be downloaded by id instead of generated again.
+      const media = items.flatMap((item) => (item.mediaId ? [item.mediaId] : [])).join(", ");
       throw new FlowPilotError(
         error instanceof FlowPilotError ? error.code : "post_submit_failed",
-        "flow.gen.failedAfterSubmit",
-        { reason, url: projectUrl },
+        media ? "flow.gen.failedAfterSubmitMedia" : "flow.gen.failedAfterSubmit",
+        { reason, url: projectUrl, media },
       );
     }
   }
@@ -217,6 +258,17 @@ export class RealFlowDriver implements FlowDriver {
   async close(options: { closeBrowser?: boolean } = {}): Promise<void> {
     if (options.closeBrowser) await this.session.closeBrowser();
     else await this.session.close();
+  }
+
+  /** Opens the named project, else the most recent one; never creates one. */
+  private async openExistingProject(page: Page, project: string | undefined): Promise<ProjectRef> {
+    if (project) return openProject(page, project);
+    await openHome(page);
+    const first = (await listProjects(page))[0];
+    if (!first) {
+      throw new FlowPilotError("project_not_found", "flow.nav.noProjects");
+    }
+    return openProject(page, first.id);
   }
 
   /** Opens the named project, else the most recent one, else a new one. */

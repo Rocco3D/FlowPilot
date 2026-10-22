@@ -3,6 +3,7 @@ import type {
   Job,
   JobResult,
   JobStatus,
+  MediaInfo,
   ModelInfo,
   SelftestReport,
   SessionStatus,
@@ -56,6 +57,15 @@ export class FakeDriver implements FlowDriver {
     return Promise.resolve(MODELS);
   }
 
+  listMedia(
+    project?: string,
+  ): Promise<{ project: { id: string; name: string }; media: MediaInfo[] }> {
+    return Promise.resolve({
+      project: { id: "fake-project", name: project ?? "Fake project" },
+      media: [{ id: "fake-media-1", type: "image", title: "A fake cat" }],
+    });
+  }
+
   async run(
     job: Job,
     onProgress?: (status: JobStatus) => void,
@@ -66,10 +76,15 @@ export class FakeDriver implements FlowDriver {
     }
     if (this.options.fail) throw new FlowPilotError("fake_failure", "core.error.internal");
     onProgress?.("downloading");
-    const { type, outputs } = job.request;
+    const { request } = job;
+    if (request.type === "download") {
+      const path = `${request.outDir ?? "fake-out"}/fake-media-${request.mediaId}.png`;
+      return { results: [{ path, type: "image", mediaId: request.mediaId }], credits: 0 };
+    }
+    const { type, outputs } = request;
     const ext = type === "video" ? "mp4" : "png";
     const results = Array.from({ length: outputs }, (_, i) => ({
-      path: `${job.request.outDir ?? "fake-out"}/${job.id}-${i + 1}.${ext}`,
+      path: `${request.outDir ?? "fake-out"}/${job.id}-${i + 1}.${ext}`,
       type,
       mediaId: `${job.id}-media-${i + 1}`,
     }));

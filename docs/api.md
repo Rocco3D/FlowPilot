@@ -45,7 +45,7 @@ All responses are JSON. Error responses use this format:
 
 ### Status Codes
 
-- **201**: Created (successful `POST /jobs`)
+- **201**: Created (successful `POST /jobs` or `POST /media/download`)
 - **400**: Bad request (bad_request, config errors)
 - **401**: Unauthorized (missing or invalid token)
 - **403**: Forbidden (bad_host: the `Host` header does not match the service address)
@@ -230,7 +230,7 @@ Provide a JSON object with the following fields (from `JobRequest`):
 - `characters` (array of strings, optional): Reference characters
 - `project` (string, optional): Project identifier
 - `outDir` (string, optional): Output directory path. Defaults to the configured output folder.
-- `upscale` (string, optional): Upscale quality ("1080p" or "4k")
+- `upscale` (string, optional): Download quality: "original", "1080p" (the 2K upscale for images) or "4k". Left out, the 1080p/2K upscale, which costs no credits on the owner's plan. "4k" is used only when asked for: it may cost credits, and Flow offers it only on some plans. A quality Flow does not offer, or offers only after a plan upgrade, fails the job with `download_tier_locked` or `upscale_unavailable` instead of downloading another quality
 - `maxCredits` (integer, optional): Per-job credit limit for this job; it can only lower `maxCreditsPerJob`, never raise it (raise it with `confirm`)
 - `confirm` (boolean, optional): `true` lets this job exceed both the per-job and monthly credit limits, whatever `maxCredits` says
 
@@ -403,6 +403,100 @@ Retrieves the result file bytes for a specific output in a job.
 
 Raw file bytes with appropriate `Content-Type` header (e.g., `image/png`, `video/mp4`).
 
+### GET /media
+
+Lists the images and videos already in a Flow project, to download one of them with `POST /media/download` instead of
+generating it again. It spends no credits.
+
+**Query parameters:**
+
+- `project` (string, optional): Project name or id. Left out, the most recent project.
+
+The list drives the Flow page, so it never runs at the same time as a job: when a job is running, the request waits
+for it to finish, then runs before the jobs still queued, and `queued` is `true`. FlowPilot opens each media in Flow's
+viewer to read its id, so the list takes about two seconds per media.
+
+**Response:**
+
+```json
+{
+  "project": { "id": "25b7a0e8-061b-479c-8044-acf421effd5f", "name": "My project" },
+  "queued": false,
+  "media": [
+    {
+      "id": "38ad2cc9-bd6e-459a-8a39-1bd35d4d887b",
+      "type": "video",
+      "title": "Red kite flying over hill"
+    },
+    { "id": "4f1f999f-3d8b-4f91-9415-718ba047dd2f", "type": "image", "title": "photo.jpg" }
+  ]
+}
+```
+
+**Fields:**
+
+- `project` (object): The project listed, with its `id` and `name`.
+- `queued` (boolean): `true` when the list had to wait for a running job.
+- `media` (array): One entry per media, in Flow's order.
+  - `id` (string): The id in the media's Flow address (`/project/<project>/edit/<id>`). For a video it can differ from the `mediaId` a job recorded for the same video: `POST /media/download` accepts both.
+  - `type` (string): "image" or "video".
+  - `title` (string): The title Flow shows. Flow reuses titles, so two media can have the same one: use the id.
+
+**curl Example:**
+
+```bash
+TOKEN=$(cat ~/.config/flowpilot/token)
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://127.0.0.1:47820/media?project=My%20project"
+```
+
+### POST /media/download
+
+Queues the download of a media already in a Flow project, as a job. It generates nothing and spends no credits: it is
+the way to get a result back without generating it again, for example after a job that failed once Flow had already
+generated (its error lists the media ids).
+
+**Request Body:**
+
+- `mediaId` (string, required): The media id, from `GET /media` or from a job (`results[].mediaId`, or the error of a failed job).
+- `project` (string, optional): Project name or id. Left out, the most recent project.
+- `outDir` (string, optional): Output directory path. Defaults to the configured output folder.
+- `upscale` (string, optional): Download quality, as in `POST /jobs`. A file you uploaded to Flow has no quality to choose: it is downloaded as it is, unless a quality other than "original" is asked for, which fails with `upscale_unavailable`.
+
+The file is saved as `<project>-media-<id>` with the extension Flow gives it; characters Windows does not allow in a
+file name (`\ / : * ? " < > |`) become `-`.
+
+**Response (201):**
+
+The queued job. Follow it with `GET /jobs/:id`: when it is `done`, `results` holds the file.
+
+```json
+{
+  "id": "20261022-133428292-cbb0",
+  "request": {
+    "type": "download",
+    "mediaId": "38ad2cc9-bd6e-459a-8a39-1bd35d4d887b",
+    "project": "My project",
+    "outDir": "C:\\Users\\me\\Documents\\FlowPilot"
+  },
+  "status": "queued",
+  "createdAt": "2026-10-22T13:34:28.292Z",
+  "results": []
+}
+```
+
+A media id that Flow does not show in the project fails the job with `media_not_found`.
+
+**curl Example:**
+
+```bash
+TOKEN=$(cat ~/.config/flowpilot/token)
+curl -X POST http://127.0.0.1:47820/media/download \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "mediaId": "38ad2cc9-bd6e-459a-8a39-1bd35d4d887b", "project": "My project" }'
+```
+
 ### GET /credits
 
 Retrieves credit information for the account.
@@ -482,12 +576,12 @@ Gracefully shuts down the API server.
 
 ## Job Object
 
-The `Job` object represents a generation task.
+The `Job` object represents a generation task, or the download of a media already in Flow (`POST /media/download`).
 
 **Fields:**
 
 - `id` (string): Unique job identifier, built from the creation time (e.g., "20261002-143000000-a1b2").
-- `request` (JobRequest): The request that created this job, with what it left out filled in from the configuration (`model`, `outputs`, `outDir`), plus one field the service sets itself:
+- `request` (object): The request that created this job. For a download, the body of `POST /media/download` with `type` set to "download" and `outDir` filled in. For a generation, the `JobRequest`, with what it left out filled in from the configuration (`model`, `outputs`, `outDir`), plus one field the service sets itself:
   - `modelFromConfig` (boolean): `true` when `model` came from `defaultVideoModel` or `defaultImageModel`, the only case in which a model Flow no longer offers may be replaced by its successor. A value sent by the client is ignored.
 - `status` (string): Current status (see below).
 - `createdAt` (string): ISO 8601 timestamp when the job was created.
@@ -495,12 +589,12 @@ The `Job` object represents a generation task.
 - `finishedAt` (string, optional): ISO 8601 timestamp when the job completed.
 - `credits` (integer, optional): Credits spent on this job.
 - `balance` (integer, optional): Google Flow credits left on the account after the job, read from Flow. Missing when Flow could not be read.
-- `results` (array): List of generated files (empty until job completes).
+- `results` (array): List of downloaded files (empty until the job completes), each with `path`, `type` and, when known, `mediaId`. A file counts only when it is on disk and not empty; otherwise the job fails with `download_failed`.
 - `modelUsed` (string, optional): The model the job really ran with. It differs from `request.model` when a configured default model Flow no longer offers was replaced by its successor, so a client can read what ran without parsing the note.
 - `note` (string, optional): Something worth telling the user about how the job ran, in words. Present when a configured default model Flow no longer offers was replaced by its successor, so the client can show why the job used a different model.
 - `error` (object, optional): Error details if the job failed.
   - `code` (string): Error code (e.g., "credits_over_job_limit", "agent_mode_on").
-  - `message` (string): Human-readable message.
+  - `message` (string): Human-readable message. When a generation fails after Flow already produced its media, the message lists their ids, to download them with `POST /media/download` instead of generating them again.
   - `detail` (string, optional): First line of the original error when the failure was unexpected.
 
 ## Job Statuses
@@ -508,8 +602,8 @@ The `Job` object represents a generation task.
 Jobs progress through the following statuses:
 
 - `queued`: Waiting to start. Can be cancelled.
-- `running`: Generation in progress.
-- `downloading`: Downloading generated content.
+- `running`: Generation in progress, or a download job opening its project.
+- `downloading`: Downloading the content.
 - `done`: Completed successfully.
 - `failed`: Generation failed.
 - `cancelled`: Job was cancelled by the user.

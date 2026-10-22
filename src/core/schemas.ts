@@ -3,6 +3,10 @@ import { z } from "zod";
 export const JobType = z.enum(["video", "image"]);
 export type JobType = z.infer<typeof JobType>;
 
+/** Download quality; left out, the 1080p/2K upscale, never the 4K one, which may cost credits. */
+export const Upscale = z.enum(["original", "1080p", "4k"]);
+export type Upscale = z.infer<typeof Upscale>;
+
 export const JobRequest = z.object({
   type: JobType,
   prompt: z.string().min(1),
@@ -17,7 +21,7 @@ export const JobRequest = z.object({
   characters: z.array(z.string()).optional(),
   project: z.string().optional(),
   outDir: z.string().optional(),
-  upscale: z.enum(["1080p", "4k"]).optional(),
+  upscale: Upscale.optional(),
   maxCredits: z.number().int().min(0).optional(),
   /** Overrides the credit limits for this job. */
   confirm: z.boolean().optional(),
@@ -30,6 +34,20 @@ export const JobRequest = z.object({
 export type JobRequest = z.infer<typeof JobRequest>;
 /** What a client may send: whatever it leaves out is filled in by the service from the configuration. */
 export type JobRequestInput = z.input<typeof JobRequest>;
+
+/** Downloads a media already in a Flow project, by its id: it generates nothing and spends no credits. */
+export const MediaDownloadRequest = z.object({
+  type: z.literal("download"),
+  mediaId: z.string().min(1),
+  project: z.string().optional(),
+  outDir: z.string().optional(),
+  upscale: Upscale.optional(),
+});
+export type MediaDownloadRequest = z.infer<typeof MediaDownloadRequest>;
+
+/** What the queue runs: a generation or the download of a media already in Flow. */
+export const QueueRequest = z.union([JobRequest, MediaDownloadRequest]);
+export type QueueRequest = z.infer<typeof QueueRequest>;
 
 export const JobStatus = z.enum([
   "queued",
@@ -59,7 +77,7 @@ export type JobError = z.infer<typeof JobError>;
 
 export const Job = z.object({
   id: z.string(),
-  request: JobRequest,
+  request: QueueRequest,
   status: JobStatus,
   createdAt: z.string(),
   startedAt: z.string().optional(),
@@ -75,6 +93,21 @@ export const Job = z.object({
   error: JobError.optional(),
 });
 export type Job = z.infer<typeof Job>;
+
+export const MediaInfo = z.object({
+  id: z.string(),
+  type: JobType,
+  title: z.string(),
+});
+export type MediaInfo = z.infer<typeof MediaInfo>;
+
+export const MediaList = z.object({
+  project: z.object({ id: z.string(), name: z.string() }),
+  /** True when the list had to wait for a running job to finish. */
+  queued: z.boolean(),
+  media: z.array(MediaInfo),
+});
+export type MediaList = z.infer<typeof MediaList>;
 
 /** Google Flow credits left on the account, as shown in Flow's account panel. */
 export const FlowBalance = z.object({

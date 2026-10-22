@@ -6,8 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Media already in a Flow project can be listed and downloaded again without generating anything or spending credits: `GET /media` and `POST /media/download` in the HTTP API, `list_media` and `download_media` in the MCP server. The download is a job in the queue; the list waits for a running job and says so (`queued`). The file is saved as `<project>-media-<id>`
+- A job that fails after Flow already generated its media lists their ids in the error, so they can be downloaded instead of generated again
+- `upscale` accepts `original`, to ask for the file as generated
+
+### Changed
+
+- Results are downloaded upscaled by default: 2K for images, 1080p for videos, which cost no credits on the owner's plan. 4K only when asked for with `upscale` set to `4k`, because it may cost credits. A quality Flow does not offer fails the job instead of downloading another one
+
 ### Fixed
 
+- Downloading an upscaled result works: Flow ignores a mouse click on the upscaled items of its quality menu, so the item is now selected from the keyboard. A quality Flow shows disabled is treated like one that needs a plan upgrade, instead of being picked and never arriving
+- A download counts only when the file is on disk and not empty; otherwise the job fails with `download_failed` instead of reporting a file that is not there
+- The download from Flow's media viewer uses its current _Download media_ button
+- A project asked for by its exact name is found: the name read from Flow's project card included the text of the card's edit and delete icons, so only a partial match could work
 - The CLI no longer waits forever for a service that does not answer: every request to the local API has a timeout (60 seconds for the plain requests, 300 for the ones that drive the browser and for the file downloads), and a service that stays silent ends the command with a `service_timeout` error instead of hanging
 - The CLI starts the service from the build output (`dist/server/main.js`) whichever directory the CLI runs from: run from the sources it looked for `src/server/main.js`, and the service died with `Cannot find module` instead of starting. A missing build now says what to run
 

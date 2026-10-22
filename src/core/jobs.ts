@@ -3,15 +3,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { FlowPilotError } from "./errors.js";
 import { dataDir } from "./paths.js";
-import { Job, JobRequest } from "./schemas.js";
+import { Job, QueueRequest } from "./schemas.js";
 
 export class JobStore {
   private lastMs = 0;
 
   constructor(private readonly dir: string = path.join(dataDir(), "jobs")) {}
 
-  create(request: JobRequest): Job {
-    const parsed = JobRequest.parse(request);
+  create(request: QueueRequest): Job {
+    const parsed = QueueRequest.parse(request);
     // Strictly increasing timestamps keep ids sorted by creation order.
     const ms = Math.max(Date.now(), this.lastMs + 1);
     this.lastMs = ms;

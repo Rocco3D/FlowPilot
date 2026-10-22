@@ -13,6 +13,7 @@ export default {
   "session.statusStopped": "Chrome non è in esecuzione sul profilo.",
   "nav.projectNotFound": "Nessun progetto Flow corrisponde a {project}.",
   "nav.projectNotOpened": "Flow non ha aperto una pagina di progetto.",
+  "nav.noProjects": "Flow non ha ancora nessun progetto.",
   "models.settingsNotOpen": "Il popover delle impostazioni di Flow non si è aperto.",
   "models.menuNotOpen": "Il menu del modello di Flow non si è aperto.",
   "gen.settingsNotApplied": "Flow non ha applicato le impostazioni richieste: {details}.",
@@ -34,6 +35,8 @@ export default {
   "gen.failed": "Flow ha segnalato che la generazione non è riuscita.",
   "gen.failedAfterSubmit":
     "{reason} La generazione è stata inviata e i crediti sono stati spesi; esiste in Flow: {url}",
+  "gen.failedAfterSubmitMedia":
+    "{reason} La generazione è stata inviata e i crediti sono stati spesi; esiste in Flow: {url}. Scaricala con l'identificativo del media invece di generarla di nuovo: {media}",
   "refs.fileNotFound": "File di input non trovato: {path}.",
   "refs.framesVideoOnly": "I fotogrammi iniziale e finale sono disponibili solo per i video.",
   "refs.framesExclusive": "I fotogrammi non si possono combinare con ingredienti o personaggi.",
@@ -53,6 +56,8 @@ export default {
   "download.upscaleUnavailable":
     "Non sono riuscito a scaricare la qualità richiesta ({quality}). L'originale è ancora in Flow all'indirizzo {url}.",
   "download.noSource": "Non riesco a trovare il file multimediale di un risultato.",
+  "download.fileMissing": "Il file scaricato {path} manca o è vuoto.",
+  "download.mediaNotFound": "Flow non mostra nessun media con id {id} nel progetto {project}.",
   "balance.unreadable":
     "Non riesco a leggere il saldo dei crediti dal pannello dell'account di Flow.",
   "driver.notSignedIn":

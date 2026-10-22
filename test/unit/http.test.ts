@@ -189,7 +189,7 @@ describe("jobs", () => {
     const res = await call("POST", "/jobs", imageJob);
     expect(res.status).toBe(201);
     const created = (await res.json()) as Job;
-    expect(created.request.outputs).toBe(1);
+    expect(created.request).toMatchObject({ outputs: 1 });
     expect(created.request.outDir).toBe(path.join(dir, "out"));
     const done = await createDone();
     expect(done.results).toHaveLength(1);
@@ -236,6 +236,38 @@ describe("jobs", () => {
     expect((await call("GET", `/jobs/${done.id}/files/5`)).status).toBe(404);
     fs.rmSync(done.results[0]!.path);
     expect((await call("GET", `/jobs/${done.id}/files/0`)).status).toBe(404);
+  });
+});
+
+describe("media", () => {
+  it("lists the media of a project, saying whether it waited for a job", async () => {
+    const res = await call("GET", "/media?project=My%20project");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      project: { id: "fake-project", name: "My project" },
+      queued: false,
+      media: [{ id: "fake-media-1", type: "image", title: "A fake cat" }],
+    });
+  });
+
+  it("queues the download of a media as a job, saved in the configured folder", async () => {
+    const res = await call("POST", "/media/download", { mediaId: "m1", upscale: "original" });
+    expect(res.status).toBe(201);
+    const created = (await res.json()) as Job;
+    expect(created.request).toEqual({
+      type: "download",
+      mediaId: "m1",
+      upscale: "original",
+      outDir: path.join(dir, "out"),
+    });
+    expect(created.status).toBe("queued");
+  });
+
+  it("refuses a download without a media id or with an unknown quality", async () => {
+    expect((await call("POST", "/media/download", {})).status).toBe(400);
+    expect((await call("POST", "/media/download", { mediaId: "m1", upscale: "8k" })).status).toBe(
+      400,
+    );
   });
 });
 

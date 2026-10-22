@@ -7,6 +7,8 @@ import type {
   FlowBalance,
   Job,
   JobRequestInput,
+  MediaDownloadRequest,
+  MediaList,
   ModelInfo,
   SelftestReport,
   SessionStatus,
@@ -25,6 +27,8 @@ export interface Credits {
 const DEFAULT_TIMEOUT_MS = 60_000;
 /** Requests that drive the browser (doctor, selftest, models) and file downloads take longer. */
 const LONG_TIMEOUT_MS = 300_000;
+/** The media list waits for a running job, and a video job can take up to 30 minutes. */
+const MEDIA_LIST_TIMEOUT_MS = 45 * 60_000;
 
 export interface ClientOptions {
   /** Timeout of the plain requests; for tests. */
@@ -117,6 +121,15 @@ export class Client {
   listJobs = () => this.json<Job[]>("GET", "/jobs");
   getJob = (id: string) => this.json<Job>("GET", `/jobs/${encodeURIComponent(id)}`);
   cancelJob = (id: string) => this.json<Job>("DELETE", `/jobs/${encodeURIComponent(id)}`);
+  listMedia = (project?: string) =>
+    this.json<MediaList>(
+      "GET",
+      project === undefined ? "/media" : `/media?project=${encodeURIComponent(project)}`,
+      undefined,
+      MEDIA_LIST_TIMEOUT_MS,
+    );
+  downloadMedia = (req: Omit<MediaDownloadRequest, "type">) =>
+    this.json<Job>("POST", "/media/download", req);
   credits = () => this.json<Credits>("GET", "/credits");
   getConfig = () => this.json<Config>("GET", "/config");
   setConfig = (key: string, value: string) =>

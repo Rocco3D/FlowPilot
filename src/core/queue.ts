@@ -4,13 +4,15 @@ import type { FlowDriver } from "../flow/driver.js";
 import { FlowPilotError } from "./errors.js";
 import type { JobStore } from "./jobs.js";
 import type { Logger } from "./logger.js";
-import type { Job, JobError, JobRequest, JobStatus } from "./schemas.js";
+import type { Job, JobError, JobStatus, QueueRequest } from "./schemas.js";
 
 export const TERMINAL: JobStatus[] = ["done", "failed", "cancelled", "interrupted"];
 
 export class JobQueue extends EventEmitter {
   private processing: Promise<void> | undefined;
   private stopped = false;
+  private busy = false;
+  private tasks: (() => Promise<void>)[] = [];
 
   constructor(
     private readonly driver: FlowDriver,
@@ -28,7 +30,7 @@ export class JobQueue extends EventEmitter {
     this.schedule();
   }
 
-  enqueue(request: JobRequest): Job {
+  enqueue(request: QueueRequest): Job {
     const job = this.store.create(request);
     this.emit("job", job);
     this.schedule();
@@ -64,6 +66,19 @@ export class JobQueue extends EventEmitter {
     });
   }
 
+  /**
+   * Runs `fn` on the Flow page as soon as no job is using it, ahead of the jobs still queued. `queued` tells whether
+   * it had to wait for a running job.
+   */
+  async exclusive<T>(fn: () => Promise<T>): Promise<{ value: T; queued: boolean }> {
+    const queued = this.busy;
+    const value = await new Promise<T>((resolve, reject) => {
+      this.tasks.push(() => fn().then(resolve, reject));
+      this.schedule();
+    });
+    return { value, queued };
+  }
+
   /** Stops taking new jobs; resolves once the current one has finished. */
   async stop(): Promise<void> {
     this.stopped = true;
@@ -87,12 +102,22 @@ export class JobQueue extends EventEmitter {
 
   private async loop(): Promise<void> {
     while (!this.stopped) {
+      const task = this.tasks.shift();
+      if (task) {
+        await task();
+        continue;
+      }
       const next = this.store
         .list()
         .reverse()
         .find((j) => j.status === "queued");
       if (!next) return;
-      await this.runJob(next);
+      this.busy = true;
+      try {
+        await this.runJob(next);
+      } finally {
+        this.busy = false;
+      }
     }
   }
 

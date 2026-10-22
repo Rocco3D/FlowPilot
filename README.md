@@ -99,7 +99,7 @@ flowpilot video --prompt "A flowing waterfall" --model "Omni 1.1 Flash" --resolu
 - `--no-wait`: Submit the job and exit immediately (by default, the CLI waits for the job to finish)
 - `--json`: Output JSON instead of human-readable text
 - `--out ~/Downloads`: Save results to a custom folder (default: configured output folder)
-- `--upscale 4k`: Upscale the result (1080p or 4k)
+- `--upscale 4k`: Download quality: `original`, `1080p` (2K for images) or `4k`. Left out, FlowPilot downloads the 1080p/2K upscale, which costs no credits on the owner's plan; 4K only when asked for, because it may cost credits
 - `--max-credits 10`: Lower the per-job credit limit for this run (it can never raise it)
 - `--confirm`: Allow the job to exceed the per-job and monthly credit limits
 
@@ -194,6 +194,13 @@ flowpilot cancel <id>
 ```
 
 Cancelling a job that is already running or downloading has no effect.
+
+### Media already in Flow
+
+Images and videos already in a Flow project, from an earlier job, another tool or an upload, can be listed and
+downloaded again without generating anything or spending credits, through the [HTTP API](docs/api.md) (`GET /media`,
+`POST /media/download`) or the [MCP server](docs/mcp.md) (`list_media`, `download_media`). There is no CLI command for
+it. The file is saved as `<project>-media-<id>`.
 
 ### Service shutdown
 
@@ -295,8 +302,9 @@ Tabs open in that window are lost. This is expected, not a failure.
 
 ### Things that do not work
 
-[docs/known-issues.md](docs/known-issues.md) lists the limits worth knowing: one job at a time, only the results a
-job just produced, no automatic retry, Flow driven in English, and the idle shutdown.
+[docs/known-issues.md](docs/known-issues.md) lists the limits worth knowing: one job at a time, media already in
+Flow reachable only from the HTTP API and the MCP server, download quality, no automatic retry, Flow driven in
+English, and the idle shutdown.
 
 ### Logs
 

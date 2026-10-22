@@ -63,8 +63,19 @@ export const BANNER_EXCLUDED_CSS =
 export const BANNER_ALERT_CSS =
   '[role="alert"], [role="status"], [aria-live]:not([aria-live="off"]), [class*="snackbar" i], [class*="toast" i]';
 
-/** Download tier patterns: default original, then 1080p/2K and 4K upscales. */
+/** Download tier patterns: the original, the 1080p/2K upscale (the default) and the 4K one. */
 export const TIER_RE = { original: /original/i, "1080p": /2K|1080p/i, "4k": /4K/i } as const;
+/** Any item of a download tier menu, e.g. "1K Original size", "1080p Upscaled", "270p Animated GIF". */
+export const TIER_ITEM_RE = /\b(\d{3,4}p|\dK)\b/;
+/** Only a video's tiers are named by height. */
+export const VIDEO_TIER_RE = /\b\d{3,4}p\b/;
+export const VIDEO_EXT_RE = /^\.(mp4|mov|webm)$/i;
+/** Thumbnails of the viewer's navigation rail: one per media of the project, all present at once. */
+export const RAIL_THUMBNAIL_CSS = "flow-navigation-rail-thumbnail button";
+/** A media of the project grid, to open the viewer from. */
+export const GRID_MEDIA_CSS = "flow-grid-tile-container img";
+export const mediaUrl = (projectId: string, mediaId: string) =>
+  `https://flow.google.com/project/${projectId}/edit/${mediaId}?hl=en`;
 
 export const SETTINGS_TRIGGER_LABEL = "Settings trigger";
 
@@ -155,6 +166,20 @@ export const selectors = {
       page.locator(
         "[data-radix-popper-content-wrapper]:visible, [data-radix-menu-content][data-state=open]:visible",
       ),
+  },
+  /** Shown by the viewer only for a video. */
+  saveFrameButton: {
+    describe: 'Viewer button "Save frame"',
+    locate: (page) => page.getByRole("button", { name: "Save frame", exact: true }),
+  },
+  /** Shown by the viewer only for an image. */
+  imageCropButton: {
+    describe: 'Viewer button "Button to open image cropping menu"',
+    locate: (page) => page.getByRole("button", { name: /image cropping menu/i }),
+  },
+  downloadMediaButton: {
+    describe: 'Viewer button "Download media"',
+    locate: (page) => page.getByRole("button", { name: "Download media", exact: true }),
   },
   moreOptionsButton: {
     describe: 'Viewer button "More options"',

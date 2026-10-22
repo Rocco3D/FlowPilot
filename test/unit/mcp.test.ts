@@ -57,6 +57,13 @@ function handle(req: http.IncomingMessage, res: http.ServerResponse, raw: string
     written = { key, value };
     return reply(res, 200, { [key]: value, outputs: 2, maxCreditsPerJob: 20 });
   }
+  if (url === "/media?project=P" && method === "GET") {
+    return reply(res, 200, { project: { id: "p1", name: "P" }, queued: true, media: [] });
+  }
+  if (url === "/media/download" && method === "POST") {
+    posted = JSON.parse(raw);
+    return reply(res, 201, { ...baseJob, status: "queued" });
+  }
   if (url === "/jobs" && method === "POST") {
     posted = JSON.parse(raw);
     return reply(res, 201, { ...baseJob, status: "queued" });
@@ -139,6 +146,18 @@ describe("mcp server", () => {
       status: "done",
       results: [{ path: "/out/a.png" }],
     });
+  });
+
+  it("list_media passes the project and reports that the list waited", async () => {
+    const { isError, text } = await call("list_media", { project: "P" });
+    expect(isError).toBeFalsy();
+    expect(JSON.parse(text)).toMatchObject({ project: { name: "P" }, queued: true });
+  });
+
+  it("download_media queues the download and returns the job id", async () => {
+    const { text } = await call("download_media", { mediaId: "m1", upscale: "4k", wait: false });
+    expect(posted).toEqual({ mediaId: "m1", upscale: "4k" });
+    expect(JSON.parse(text)).toEqual({ id: "j1", status: "queued" });
   });
 
   it("generate_image with wait=false returns the job id", async () => {

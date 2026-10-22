@@ -68,10 +68,12 @@ async function readCards(page: Page): Promise<ProjectCard[]> {
         while (card.parentElement && card.parentElement.querySelectorAll(linkCss).length === 1) {
           card = card.parentElement;
         }
-        return {
-          href: a.getAttribute("href") ?? "",
-          name: (card.textContent ?? "").replace(/\s+/g, " ").trim(),
-        };
+        // The name is the card's first line: the edit and delete icons follow it with their own text.
+        const name = (card as HTMLElement).innerText
+          .split("\n")
+          .map((line) => line.trim())
+          .find(Boolean);
+        return { href: a.getAttribute("href") ?? "", name: name ?? "" };
       }),
     PROJECT_LINK_CSS,
   );
@@ -104,8 +106,8 @@ async function waitForProject(page: Page): Promise<string> {
   return id;
 }
 
-/** Opens a project by id or name (exact, case-insensitive, then substring); returns its id. */
-export async function openProject(page: Page, nameOrId: string): Promise<string> {
+/** Opens a project by id or name (exact, case-insensitive, then substring); returns its id and name. */
+export async function openProject(page: Page, nameOrId: string): Promise<ProjectRef> {
   await openHome(page);
   const cards = await readCards(page);
   const wanted = nameOrId.trim().toLowerCase();
@@ -119,7 +121,7 @@ export async function openProject(page: Page, nameOrId: string): Promise<string>
     });
   }
   await page.goto(new URL(card.href, page.url()).toString(), { waitUntil: "domcontentloaded" });
-  return waitForProject(page);
+  return { id: await waitForProject(page), name: card.name };
 }
 
 /** Creates a project from the home page and returns its id. */

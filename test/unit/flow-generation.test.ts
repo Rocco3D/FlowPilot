@@ -3,8 +3,10 @@ import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   assertFetchAllowed,
+  assertSaved,
   chooseTier,
   extensionFor,
+  mediaBaseName,
   resultBaseName,
   tierPattern,
   writeSummary,
@@ -126,27 +128,60 @@ describe("file naming", () => {
     expect(extensionFor("image", undefined)).toBe(".png");
   });
 
-  it("maps upscale to a tier pattern", () => {
-    expect(tierPattern(undefined).test("720p Original size")).toBe(true);
-    expect(tierPattern("1080p").test("1080p Upscaled")).toBe(true);
+  it("maps upscale to a tier pattern, the 1080p/2K upscale when left out", () => {
+    expect(tierPattern("original").test("720p Original size")).toBe(true);
+    expect(tierPattern(undefined).test("1080p Upscaled")).toBe(true);
+    expect(tierPattern(undefined).test("2K Upscaled")).toBe(true);
+    expect(tierPattern(undefined).test("4K Upscaled")).toBe(false);
     expect(tierPattern("4k").test("4K Upscaled")).toBe(true);
   });
 
-  it("chooses the tier item and rejects gated ones", () => {
-    const labels = ["270p Animated GIF", "720p Original size", "1080p Upscaled", "4K Upscaled"];
-    expect(chooseTier(labels, tierPattern(undefined))).toEqual({ kind: "pick", index: 1 });
-    expect(chooseTier(labels, tierPattern("1080p"))).toEqual({ kind: "pick", index: 2 });
-    expect(chooseTier(labels, tierPattern("4k"))).toEqual({ kind: "pick", index: 3 });
-    expect(chooseTier(["2K Upscaled"], tierPattern("1080p"))).toEqual({ kind: "pick", index: 0 });
-    expect(chooseTier(["4K Upgrade"], tierPattern("4k"))).toEqual({ kind: "locked" });
-    expect(chooseTier(["720p Original size"], tierPattern("4k"))).toEqual({ kind: "none" });
+  it("chooses the tier item and rejects gated or disabled ones", () => {
+    const items = ["270p Animated GIF", "720p Original size", "1080p Upscaled", "4K Upscaled"].map(
+      (label) => ({ label, disabled: false }),
+    );
+    const open = (label: string) => [{ label, disabled: false }];
+    expect(chooseTier(items, tierPattern("original"))).toEqual({ kind: "pick", index: 1 });
+    expect(chooseTier(items, tierPattern(undefined))).toEqual({ kind: "pick", index: 2 });
+    expect(chooseTier(items, tierPattern("4k"))).toEqual({ kind: "pick", index: 3 });
+    expect(chooseTier(open("2K Upscaled"), tierPattern(undefined))).toEqual({
+      kind: "pick",
+      index: 0,
+    });
+    expect(chooseTier(open("4K Upgrade"), tierPattern("4k"))).toEqual({ kind: "locked" });
+    expect(chooseTier([{ label: "4K Upscaled", disabled: true }], tierPattern("4k"))).toEqual({
+      kind: "locked",
+    });
+    expect(chooseTier(open("720p Original size"), tierPattern("4k"))).toEqual({ kind: "none" });
   });
 
   it("allows the direct fetch only for the original quality", () => {
-    expect(() => assertFetchAllowed(undefined, "https://flow/p")).not.toThrow();
-    expect(() => assertFetchAllowed("1080p", "https://flow/p")).toThrowError(
-      expect.objectContaining({ code: "upscale_unavailable" }),
-    );
+    expect(() => assertFetchAllowed("original", "https://flow/p")).not.toThrow();
+    for (const upscale of [undefined, "1080p"] as const) {
+      expect(() => assertFetchAllowed(upscale, "https://flow/p")).toThrowError(
+        expect.objectContaining({ code: "upscale_unavailable" }),
+      );
+    }
+  });
+
+  it("names a downloaded media after its project and id, without characters Windows refuses", () => {
+    expect(mediaBaseName("ott 20 - 22:04", "ab5e")).toBe("ott 20 - 22-04-media-ab5e");
+    expect(mediaBaseName('a\\b/c*d?e"f<g>h|i', "x")).toBe("a-b-c-d-e-f-g-h-i-media-x");
+  });
+
+  it("accepts a downloaded file only when it is on disk and not empty", () => {
+    const dir = path.join(process.cwd(), "temp", "tests", `saved-${process.pid}-${Date.now()}`);
+    fs.mkdirSync(dir, { recursive: true });
+    const full = path.join(dir, "full.png");
+    const empty = path.join(dir, "empty.png");
+    fs.writeFileSync(full, "x");
+    fs.writeFileSync(empty, "");
+    expect(assertSaved(full)).toBe(full);
+    for (const file of [empty, path.join(dir, "missing.png")]) {
+      expect(() => assertSaved(file)).toThrowError(
+        expect.objectContaining({ code: "download_failed" }),
+      );
+    }
   });
 
   it("writes the summary next to the result", () => {

@@ -20,7 +20,7 @@ interface GenerateOpts extends JsonOpt {
   character?: string[];
   project?: string;
   out?: string;
-  upscale?: "1080p" | "4k";
+  upscale?: "original" | "1080p" | "4k";
   maxCredits?: number;
   confirm?: boolean;
   wait: boolean;

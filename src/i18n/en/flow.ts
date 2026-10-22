@@ -13,6 +13,7 @@ export default {
   "session.statusStopped": "Chrome is not running on the profile.",
   "nav.projectNotFound": "No Flow project matches {project}.",
   "nav.projectNotOpened": "Flow did not open a project page.",
+  "nav.noProjects": "Flow has no project yet.",
   "models.settingsNotOpen": "The Flow settings popover did not open.",
   "models.menuNotOpen": "The Flow model menu did not open.",
   "gen.settingsNotApplied": "Flow did not apply the requested settings: {details}.",
@@ -33,6 +34,8 @@ export default {
   "gen.failed": "Flow reported that the generation failed.",
   "gen.failedAfterSubmit":
     "{reason} The generation was submitted and credits were spent; it exists in Flow: {url}",
+  "gen.failedAfterSubmitMedia":
+    "{reason} The generation was submitted and credits were spent; it exists in Flow: {url}. Download by media id instead of generating again: {media}",
   "refs.fileNotFound": "Input file not found: {path}.",
   "refs.framesVideoOnly": "Start and end frames are only available for video.",
   "refs.framesExclusive": "Frames cannot be combined with ingredients or characters.",
@@ -50,6 +53,8 @@ export default {
   "download.upscaleUnavailable":
     "The requested download quality ({quality}) could not be downloaded. The original is still in Flow at {url}.",
   "download.noSource": "Could not find the media file of a result.",
+  "download.fileMissing": "The downloaded file {path} is missing or empty.",
+  "download.mediaNotFound": "Flow shows no media with id {id} in project {project}.",
   "balance.unreadable": "Could not read the credit balance from Flow's account panel.",
   "driver.notSignedIn": "Chrome is connected but not signed in to Flow. Run the login command.",
   "driver.fatal": "FlowPilot service failed: {reason}",

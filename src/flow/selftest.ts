@@ -46,7 +46,7 @@ export async function runSelftest(page: Page): Promise<SelftestReport> {
     const projects = await listProjects(page);
     const first = projects[0];
     if (!first) return `created project ${await createProject(page)}`;
-    return `opened project ${await openProject(page, first.id)}`;
+    return `opened project ${(await openProject(page, first.id)).id}`;
   });
   if (!opened) return report(checks);
 
