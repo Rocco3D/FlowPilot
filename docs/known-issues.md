@@ -15,7 +15,7 @@ every model that is actually available:
 Flow does not offer model Nano Banana 2 with the current settings. Available: Nano Banana Pro, Nano Banana 2 Lite, Nano Banana 2.1.
 ```
 
-`flowpilot models` prints the live list at any time, and is the fastest way to find a name to put in the
+`flowpilot models` prints the list Flow offers (read again after an hour), and is the fastest way to find a name to put in the
 configuration.
 
 There is one automatic case. When the model a job uses is the one configured as default (`defaultVideoModel` or
@@ -37,6 +37,11 @@ at a time, and two jobs sharing the page would read each other's results.
 
 The consequence to know: two jobs cannot shorten each other's waiting time, and a long video blocks every image
 queued after it.
+
+While a job is using the page, the commands that read Flow do not touch it: `doctor` answers without the model
+check and says so, `models` shows the list already read, or fails with `job_running` when there is none yet, and
+`selftest` fails with `job_running`. Run them again when the job ends. A job asked for while one of them is reading
+Flow waits for it to finish; for `doctor` that is about half a minute the first time, a few seconds after.
 
 ## Media already in Flow
 

@@ -13,7 +13,7 @@ FlowPilot is a service that automates Google Flow interactions. Here is how it i
 
 ## Principles
 
-- **Single owner**: Only the service touches Chrome; no concurrent access.
+- **Single owner**: Only the service touches Chrome; no concurrent access. Jobs, the media list and the commands that read Flow (`doctor`, models, self-test, balance) take turns on the page; while a job has it, those commands answer without touching it.
 - **Serial execution**: Jobs run one at a time in a queue. The download of a media already in Flow is a job too, and the media list waits for the running job.
 - **Fail early**: Settings and cost are verified before submitting to Flow, to avoid spending credits.
 - **Centralized selectors**: All Flow page DOM selectors are in `src/flow/selectors.ts`, with a self-test to catch breaking changes.

@@ -62,5 +62,8 @@ export default {
     "Non riesco a leggere il saldo dei crediti dal pannello dell'account di Flow.",
   "driver.notSignedIn":
     "Chrome è collegato ma non ha effettuato l'accesso a Flow. Esegui il comando di accesso.",
+  "driver.jobRunning": "C'è un job in corso su Flow: riprova quando finisce.",
+  "driver.modelsCheckedLater":
+    "C'è un job in corso: i modelli configurati si controllano quando finisce.",
   "driver.fatal": "Il servizio FlowPilot è fallito: {reason}",
 } as const;

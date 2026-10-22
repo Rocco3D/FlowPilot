@@ -88,6 +88,7 @@ const STATUS_BY_CODE: Record<string, number> = {
   not_found: 404,
   job_not_found: 404,
   job_not_cancellable: 409,
+  job_running: 409,
   bad_request: 400,
   unauthorized: 401,
 };

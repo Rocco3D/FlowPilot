@@ -34,6 +34,7 @@ import {
 import { fillPrompt } from "./prompt.js";
 import { assertFilesExist, attachReferences, planReferences } from "./references.js";
 import { type ResultItem, snapshotResults, waitForResults } from "./results.js";
+import { PROJECT_PATH_RE } from "./selectors.js";
 import { runSelftest } from "./selftest.js";
 import {
   applySettings,
@@ -48,7 +49,11 @@ const MODEL_CACHE_MS = 60 * 60_000;
 export class RealFlowDriver implements FlowDriver {
   private models: { at: number; list: ModelInfo[] } | undefined;
   private lastBalance: FlowBalance | undefined;
+  /** A job or the media list is using the page. */
   private running = false;
+  private turn: Promise<unknown> = Promise.resolve();
+  /** Sign-in state found by the last full doctor check. */
+  private signedIn = false;
 
   constructor(
     private readonly session: BrowserSession = new BrowserSession({
@@ -56,24 +61,64 @@ export class RealFlowDriver implements FlowDriver {
     }),
   ) {}
 
+  /** Runs `fn` alone on the page: a job that arrives meanwhile waits for it, and the other way round. */
+  private onPage<T>(fn: () => Promise<T>): Promise<T> {
+    const result = this.turn.then(fn);
+    this.turn = result.catch(() => undefined);
+    return result;
+  }
+
+  /** Runs a job, or the media list, on the page: it counts as running from the moment it is asked for. */
+  private asJob<T>(fn: () => Promise<T>): Promise<T> {
+    this.running = true;
+    return this.onPage(fn).finally(() => {
+      this.running = false;
+    });
+  }
+
+  private busy(): FlowPilotError {
+    return new FlowPilotError("job_running", "flow.driver.jobRunning");
+  }
+
   async doctor(): Promise<SessionStatus> {
-    // Open the session like jobs do (launch or attach), so the sign-in check is real.
-    let page: Page;
-    try {
-      page = await this.session.page();
-    } catch (error) {
-      if (!(error instanceof FlowPilotError)) throw error;
-      return { ...(await this.session.status()), signedIn: false, message: error.message };
-    }
-    await openHome(page);
-    const signedIn = await isSignedIn(page);
-    const status = await this.session.status();
-    return {
-      ...status,
-      signedIn,
-      message: signedIn ? status.message : t("flow.driver.notSignedIn"),
-      ...(await this.checkConfiguredModels()),
+    // Decided on arrival: a job asked for after this waits for the full check.
+    const duringJob = this.running;
+    const check = async (): Promise<SessionStatus> => {
+      // Open the session like jobs do (launch or attach), so the sign-in check is real.
+      let page: Page;
+      try {
+        page = await this.session.page();
+      } catch (error) {
+        if (!(error instanceof FlowPilotError)) throw error;
+        return { ...(await this.session.status()), signedIn: false, message: error.message };
+      }
+      if (duringJob) {
+        // A job is using the page: read it where it is, and leave the models for when the job ends. A project page
+        // opens only when signed in; between pages, the last full check says.
+        const signedIn =
+          PROJECT_PATH_RE.test(new URL(page.url()).pathname) ||
+          (await isSignedIn(page)) ||
+          this.signedIn;
+        const status = await this.session.status();
+        return {
+          ...status,
+          signedIn,
+          message: signedIn
+            ? `${status.message} ${t("flow.driver.modelsCheckedLater")}`
+            : t("flow.driver.notSignedIn"),
+        };
+      }
+      await openHome(page);
+      this.signedIn = await isSignedIn(page);
+      const status = await this.session.status();
+      return {
+        ...status,
+        signedIn: this.signedIn,
+        message: this.signedIn ? status.message : t("flow.driver.notSignedIn"),
+        ...(await this.checkConfiguredModels()),
+      };
     };
+    return duringJob ? check() : this.onPage(check);
   }
 
   /**
@@ -89,7 +134,7 @@ export class RealFlowDriver implements FlowDriver {
     if (wanted.length === 0) return {};
     try {
       // Each default is compared with the models of its own mode: the menu lists only the mode in effect.
-      const models = await this.listModels();
+      const models = await this.readModels();
       const mismatched = wanted.flatMap((w) => {
         const names = models.filter((m) => m.kind === w.kind).map((m) => m.name);
         if (names.length === 0 || names.some((n) => sameModelName(n, w.name))) return [];
@@ -110,10 +155,20 @@ export class RealFlowDriver implements FlowDriver {
   }
 
   async selftest(): Promise<SelftestReport> {
-    return runSelftest(await this.session.page());
+    if (this.running) throw this.busy();
+    return this.onPage(async () => runSelftest(await this.session.page()));
   }
 
+  /** The model list; while a job is using the page, the one already read, if any. */
   async listModels(): Promise<ModelInfo[]> {
+    if (this.running) {
+      if (this.models) return this.models.list;
+      throw this.busy();
+    }
+    return this.onPage(() => this.readModels());
+  }
+
+  private async readModels(): Promise<ModelInfo[]> {
     if (this.models && Date.now() - this.models.at < MODEL_CACHE_MS) return this.models.list;
     const page = await this.session.page();
     await this.openProjectFor(page, undefined);
@@ -125,24 +180,23 @@ export class RealFlowDriver implements FlowDriver {
   async balance(): Promise<FlowBalance | undefined> {
     // Never touch the page while a job is using it.
     if (this.running) return this.lastBalance;
-    const page = await this.session.page();
-    if (!/flow\.google\.com|labs\.google/.test(page.url())) await openHome(page);
-    return this.remember(await readBalance(page));
+    return this.onPage(async () => {
+      const page = await this.session.page();
+      if (!/flow\.google\.com|labs\.google/.test(page.url())) await openHome(page);
+      return this.remember(await readBalance(page));
+    });
   }
 
-  async run(
+  run(
     job: Job,
     onProgress?: (status: JobStatus) => void,
     onSpend?: (credits: number) => void,
   ): Promise<FlowJobResult> {
-    this.running = true;
-    try {
+    return this.asJob(() => {
       const { request } = job;
-      if (request.type === "download") return await this.downloadMedia(request, onProgress);
-      return await this.runJob(job, request, onProgress, onSpend);
-    } finally {
-      this.running = false;
-    }
+      if (request.type === "download") return this.downloadMedia(request, onProgress);
+      return this.runJob(job, request, onProgress, onSpend);
+    });
   }
 
   private remember(credits: number): FlowBalance {
@@ -150,15 +204,12 @@ export class RealFlowDriver implements FlowDriver {
     return this.lastBalance;
   }
 
-  async listMedia(project?: string): Promise<{ project: ProjectRef; media: MediaInfo[] }> {
-    this.running = true;
-    try {
+  listMedia(project?: string): Promise<{ project: ProjectRef; media: MediaInfo[] }> {
+    return this.asJob(async () => {
       const page = await this.session.page();
       const opened = await this.openExistingProject(page, project);
       return { project: opened, media: await listMedia(page) };
-    } finally {
-      this.running = false;
-    }
+    });
   }
 
   private async downloadMedia(

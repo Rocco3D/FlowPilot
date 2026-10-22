@@ -128,7 +128,7 @@ All video models support audio.
 flowpilot models
 ```
 
-This reads the live list from Flow.
+This reads the list from Flow; FlowPilot keeps it for an hour. While a job is running it shows the list already read, or asks you to try again when the job ends.
 
 ### A model Flow no longer offers
 

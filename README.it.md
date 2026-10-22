@@ -128,7 +128,7 @@ Tutti i modelli video supportano l'audio.
 flowpilot models
 ```
 
-Questo legge l'elenco live da Flow.
+Questo legge l'elenco da Flow; FlowPilot lo tiene per un'ora. Mentre un job è in corso mostra l'elenco già letto, oppure chiede di riprovare quando il job finisce.
 
 ### Un modello che Flow non offre più
 

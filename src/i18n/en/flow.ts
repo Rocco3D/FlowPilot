@@ -57,5 +57,7 @@ export default {
   "download.mediaNotFound": "Flow shows no media with id {id} in project {project}.",
   "balance.unreadable": "Could not read the credit balance from Flow's account panel.",
   "driver.notSignedIn": "Chrome is connected but not signed in to Flow. Run the login command.",
+  "driver.jobRunning": "A job is using Flow right now: try again when it ends.",
+  "driver.modelsCheckedLater": "A job is running: the configured models are checked once it ends.",
   "driver.fatal": "FlowPilot service failed: {reason}",
 } as const;

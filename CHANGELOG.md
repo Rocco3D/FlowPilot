@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The CLI starts the service from the build output (`dist/server/main.js`) whichever directory the CLI runs from: run from the sources it looked for `src/server/main.js`, and the service died with `Cannot find module` instead of starting. A missing build now says what to run
 - `doctor` compares each configured default model with the models of its own mode, video or image, whichever mode Flow's composer is in
 - `config get <key>` prints an empty line (`null` with `--json`) for a known key that is not set, and fails with `config_unknown_key` only for a key that does not exist
+- `doctor`, `models` and `selftest` never touch the Flow page while a job is using it: `doctor` answers without the model check and says so, `models` returns the list already read, `selftest` and a `models` with nothing read yet fail with `job_running` (HTTP 409). A job asked for while one of them reads Flow waits for it
 
 ## [0.1.4] - 2026-10-17
 

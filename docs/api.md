@@ -50,7 +50,7 @@ All responses are JSON. Error responses use this format:
 - **401**: Unauthorized (missing or invalid token)
 - **403**: Forbidden (bad_host: the `Host` header does not match the service address)
 - **404**: Not found (job_not_found, not_found)
-- **409**: Conflict (job_not_cancellable)
+- **409**: Conflict (job_not_cancellable, job_running)
 - **413**: Payload too large (body over 1 MB)
 - **500**: Server error (any other error code, e.g. chrome_not_found, internal)
 
@@ -71,7 +71,7 @@ Health check. No authentication required.
 
 ### POST /doctor
 
-Checks the current session status including Chrome state, API connection, and authentication. It also checks whether a newer FlowPilot version is available on GitHub, and whether the configured default models are still offered by Flow. The model check needs the Flow page, so it opens the session like a job does; it is skipped, without failing the check, when the page cannot be read.
+Checks the current session status including Chrome state, API connection, and authentication. It also checks whether a newer FlowPilot version is available on GitHub, and whether the configured default models are still offered by Flow. The model check needs the Flow page, so it opens the session like a job does; it is skipped, without failing the check, when the page cannot be read. While a job is using the Flow page, the check reads the page where it is, leaves the model check for after the job and says so in `message`; a job asked for during a full check waits for it to finish.
 
 **Response:**
 
@@ -117,7 +117,7 @@ Checks the current session status including Chrome state, API connection, and au
 
 ### POST /selftest
 
-Checks the Flow UI without spending credits. Useful for verifying the setup works before running actual jobs.
+Checks the Flow UI without spending credits. Useful for verifying the setup works before running actual jobs. While a job is using the Flow page it fails with HTTP 409 and `job_running`: run it again when the job ends.
 
 **Response:**
 
@@ -159,7 +159,7 @@ The real report has more checks (selectors, settings popover, credit line, overl
 
 ### GET /models
 
-Lists available generation models. The list is read live from Flow, so it follows Flow's current models.
+Lists available generation models. The list is read from Flow and kept for an hour. While a job is using the Flow page, the list already read is returned; when none was read yet, the request fails with HTTP 409 and `job_running`.
 
 **Response:**
 
