@@ -226,24 +226,6 @@ export function pickReplacement(wanted: string, offered: string[]): string | und
 }
 
 /**
- * The model names Flow offers right now, for reporting. Returns undefined when the page cannot answer,
- * so a check that only reports never breaks the thing it reports about.
- */
-export async function listModelNames(page: Page): Promise<string[] | undefined> {
-  try {
-    await dismissOverlays(page);
-    await openSettings(page);
-    await openModelMenu(page);
-    const names = (await readModelMenu(page)).map((m) => m.name);
-    await dismissOverlays(page);
-    return names.length > 0 ? names : undefined;
-  } catch {
-    await dismissOverlays(page);
-    return undefined;
-  }
-}
-
-/**
  * Applies the request to the settings popover and verifies it. Throws `settings_not_applied`
  * on any mismatch. Returns the credit cost shown by Flow and the selected model.
  */

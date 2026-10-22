@@ -38,7 +38,6 @@ import { runSelftest } from "./selftest.js";
 import {
   applySettings,
   ensureClassicComposer,
-  listModelNames,
   pickReplacement,
   sameModel as sameModelName,
 } from "./settings-apply.js";
@@ -84,26 +83,26 @@ export class RealFlowDriver implements FlowDriver {
   private async checkConfiguredModels(): Promise<Pick<SessionStatus, "configuredModels">> {
     const config = loadConfig();
     const wanted = [
-      { key: "defaultVideoModel", name: config.defaultVideoModel },
-      { key: "defaultImageModel", name: config.defaultImageModel },
-    ].filter((w): w is { key: string; name: string } => Boolean(w.name));
+      { key: "defaultVideoModel", kind: "video", name: config.defaultVideoModel },
+      { key: "defaultImageModel", kind: "image", name: config.defaultImageModel },
+    ].filter((w): w is { key: string; kind: string; name: string } => Boolean(w.name));
     if (wanted.length === 0) return {};
     try {
-      const page = await this.session.page();
-      await this.openProjectFor(page, undefined);
-      const names = await listModelNames(page);
-      if (!names) return {};
-      const mismatched = wanted
-        .filter((w) => !names.some((n) => sameModelName(n, w.name)))
-        .map((w) => {
-          const suggestion = pickReplacement(w.name, names);
-          return {
+      // Each default is compared with the models of its own mode: the menu lists only the mode in effect.
+      const models = await this.listModels();
+      const mismatched = wanted.flatMap((w) => {
+        const names = models.filter((m) => m.kind === w.kind).map((m) => m.name);
+        if (names.length === 0 || names.some((n) => sameModelName(n, w.name))) return [];
+        const suggestion = pickReplacement(w.name, names);
+        return [
+          {
             key: w.key,
             configured: w.name,
             available: names,
             ...(suggestion ? { suggestion } : {}),
-          };
-        });
+          },
+        ];
+      });
       return mismatched.length > 0 ? { configuredModels: mismatched } : {};
     } catch {
       return {};
