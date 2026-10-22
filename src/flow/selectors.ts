@@ -63,14 +63,14 @@ export const BANNER_EXCLUDED_CSS =
 export const BANNER_ALERT_CSS =
   '[role="alert"], [role="status"], [aria-live]:not([aria-live="off"]), [class*="snackbar" i], [class*="toast" i]';
 
-/** Download tier patterns: the original, the 1080p/2K upscale (the default) and the 4K one. */
+/** Download tier patterns: the original, the 1080p/2K upscale and the 4K one. */
 export const TIER_RE = { original: /original/i, "1080p": /2K|1080p/i, "4k": /4K/i } as const;
 /** Any item of a download tier menu, e.g. "1K Original size", "1080p Upscaled", "270p Animated GIF". */
 export const TIER_ITEM_RE = /\b(\d{3,4}p|\dK)\b/;
 /** Only a video's tiers are named by height. */
 export const VIDEO_TIER_RE = /\b\d{3,4}p\b/;
 export const VIDEO_EXT_RE = /^\.(mp4|mov|webm)$/i;
-/** Thumbnails of the viewer's navigation rail: one per media of the project, all present at once. */
+/** Thumbnails of the viewer's navigation rail: Flow renders only those around the media open. */
 export const RAIL_THUMBNAIL_CSS = "flow-navigation-rail-thumbnail button";
 /** A media of the project grid, to open the viewer from. */
 export const GRID_MEDIA_CSS = "flow-grid-tile-container img";
@@ -181,14 +181,6 @@ export const selectors = {
     describe: 'Viewer button "Download media"',
     locate: (page) => page.getByRole("button", { name: "Download media", exact: true }),
   },
-  moreOptionsButton: {
-    describe: 'Viewer button "More options"',
-    locate: (page) => page.getByRole("button", { name: "More options", exact: true }),
-  },
-  downloadMediaItem: {
-    describe: 'Menu item "Download media"',
-    locate: (page) => page.locator("[role=menuitem]").filter({ hasText: /download media/i }),
-  },
   addIngredientsButton: {
     describe: 'Prompt area button with aria-label "Add ingredients to the prompt box"',
     locate: (page) => page.locator('button[aria-label="Add ingredients to the prompt box"]'),
@@ -298,12 +290,6 @@ export const resolutionChips = (page: Page) => chip(page, RESOLUTION_CHIP_RE);
 export const durationChips = (page: Page) => chip(page, DURATION_CHIP_RE);
 export const outputChip = (page: Page, n: number) => chip(page, new RegExp(`^x${n}$`));
 
-/**
- * Tile menu item "Download" (icon text + label), not "Download media" nor the hidden global
- * "Download project" item.
- */
-export const DOWNLOAD_ITEM_RE = /^\s*(download\s*)?download\s*$/i;
-
 const CONTAINER_XPATH =
   "xpath=ancestor-or-self::*[self::flow-grid-tile-container or self::flow-tile-container][1]";
 /** The result image with this exact src or, when known, this stable media id. */
@@ -319,23 +305,7 @@ export const tileByResult = (page: Page, item: { src: string; mediaId?: string }
 /** Tile at the recorded position among the page's video tiles. */
 export const videoTileAt = (page: Page, index: number) =>
   page.locator("flow-video-tile").nth(index);
-/**
- * The tile's own "More options" button (icon text more_vert), scoped inside the tile's container
- * and never the global app menu. It is not accessible until hovered, so it is found by icon text.
- */
-export const tileMoreOptions = (tile: Locator) =>
-  // The button lives in the outer grid container, not in the inner flow-tile-container.
-  tile
-    .locator("xpath=ancestor-or-self::flow-grid-tile-container[1]")
-    .or(tile.locator(CONTAINER_XPATH))
-    .first()
-    .locator("button")
-    .filter({ hasText: /more_vert/ })
-    .first();
 // Only visible items: Flow keeps hidden menu instances in the DOM.
-export const tileDownloadItem = (page: Page) =>
-  page.locator("[role=menuitem]:visible").filter({ hasText: DOWNLOAD_ITEM_RE });
-
 export const tierItem = (page: Page, tier: RegExp) =>
   page.locator("[role=menuitem]:visible").filter({ hasText: tier });
 export const resultImage = (page: Page, src: string) =>

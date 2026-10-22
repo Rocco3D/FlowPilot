@@ -51,8 +51,9 @@ What to know:
 - The list opens each media in Flow's viewer to read its id, so it takes about two seconds per media, and it waits
   for a running job first. Behind a long video the MCP server waits up to 45 minutes for it, but the assistant's own
   client may stop waiting sooner; asking again works.
-- A video has two ids in Flow: the one in its address, which the list gives, and the one a job records. The download
-  accepts both, and the file name uses the one you asked with: `<project>-media-<id>`.
+- An image has two ids in Flow: the one in its viewer address, which the list gives and a finished job records, and
+  the one the error of a failed job lists. The download accepts both, and the file name uses the one you asked with:
+  `<project>-media-<id>`.
 - Flow reuses titles, so the list can show two media with the same title. Use the id.
 
 There is no automatic retry. A failed job stays failed and the queue moves on to the next one; run it again
@@ -60,18 +61,23 @@ yourself once you know why it failed.
 
 ## Download quality
 
-Results are downloaded upscaled: 2K for images, 1080p for videos. In October 2026 these upscales cost no credits on
-the owner's plan; Flow makes them on request, so a download takes about 10 seconds longer for an image and up to a
-minute for a video. 4K is downloaded only when asked for with `upscale` set to `4k`, because it may cost credits and
-Flow offers it only on some plans. `original` asks for the file as generated.
+Without `upscale`, FlowPilot downloads the best quality your Flow plan offers: it reads Flow's download menu and
+takes 4K when the plan has it, else the 1080p/2K upscale, otherwise the original. An upscale that asks for a plan
+upgrade, or that Flow shows disabled, counts as missing. If your plan charges credits for an upscale, the download
+spends them: the credit limits apply to generating, not to downloading. `original` asks for the file as generated.
 
-A quality Flow does not offer, or offers only after a plan upgrade, fails the job (`download_tier_locked`,
-`upscale_unavailable`) instead of downloading another one: FlowPilot never hands over a quality you did not ask for.
-A file you uploaded to Flow has no quality to choose and is downloaded as it is.
+What has been measured, on the owner's plan in October 2026 only: the 2K and 1080p upscales cost no credits, 4K is
+disabled, and Flow makes the upscale on request, so a download takes about 10 seconds longer for an image and up to a
+minute for a video. Other plans may label, price or offer these qualities differently.
+
+A quality you ask for is the only one tried: if Flow does not offer it, shows it disabled, or offers it only after a
+plan upgrade, the job fails (`download_tier_locked`, `upscale_unavailable`) instead of downloading another one. A file
+you uploaded to Flow has no quality to choose and is downloaded as it is. FlowPilot downloads from Flow's viewer; when the viewer cannot
+be opened, the job fails with `viewer_not_opened`: the media stays in Flow and can be downloaded later.
 
 A downloaded file counts only when it is on disk and not empty; otherwise the job fails with `download_failed`. When
-a job fails after Flow already generated its media, the error lists their ids, so they can be downloaded instead of
-generated again.
+an image job fails after Flow already generated its media, the error lists their ids (a video tile in Flow carries
+no id), so they can be downloaded instead of generated again; otherwise `GET /media` or `list_media` finds them.
 
 ## A result Flow made but did not show
 

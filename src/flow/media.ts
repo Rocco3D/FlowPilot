@@ -7,8 +7,8 @@ import { EDIT_PATH_RE, GRID_MEDIA_CSS, RAIL_THUMBNAIL_CSS, selectors } from "./s
 
 /**
  * Lists the media of the open project. The grid unmounts what scrolls out of view and gives no id for videos, so
- * the list walks the viewer's thumbnail rail instead: each thumbnail opens its media, whose id is in the address,
- * and the viewer's controls tell a video ("Save frame") from an image (cropping).
+ * the list walks the viewer's thumbnail rail instead, one thumbnail after the other: each opens its media, whose id is
+ * in the address, and the viewer's controls tell a video ("Save frame") from an image (cropping).
  */
 export async function listMedia(page: Page): Promise<MediaInfo[]> {
   const first = page.locator(GRID_MEDIA_CSS).first();
@@ -34,24 +34,28 @@ async function walkRail(page: Page): Promise<MediaInfo[]> {
   const video = selectors.saveFrameButton.locate(page);
   const control = video.or(selectors.imageCropButton.locate(page)).first();
   const media: MediaInfo[] = [];
-  const count = await thumbs.count();
-  for (let i = 0; i < count; i += 1) {
-    const thumb = thumbs.nth(i);
-    if ((await thumb.getAttribute("aria-current")) !== "true") {
-      const before = page.url();
-      await thumb.click();
-      await page.waitForURL((url) => url.href !== before, { timeout: 10000 });
-    }
-    // The viewer swaps its controls a moment after the address changes.
+  const seen = new Set<string>();
+  for (;;) {
+    // The viewer swaps its controls, and the rail its thumbnails, a moment after the address changes.
     await page.waitForTimeout(1500);
-    await control.waitFor({ state: "visible", timeout: 10000 });
+    // Without either control the media still counts: a missing "Save frame" means an image.
+    await control.waitFor({ state: "visible", timeout: 10000 }).catch(() => undefined);
     const id = EDIT_PATH_RE.exec(page.url())?.[1];
-    if (!id) continue;
+    if (!id || seen.has(id)) break;
+    seen.add(id);
+    const current = await thumbs.evaluateAll((els) =>
+      els.findIndex((el) => el.getAttribute("aria-current") === "true"),
+    );
     media.push({
       id,
       type: (await video.isVisible()) ? "video" : "image",
-      title: (await thumb.getAttribute("aria-label")) ?? "",
+      title: current >= 0 ? ((await thumbs.nth(current).getAttribute("aria-label")) ?? "") : "",
     });
+    // The rail holds only the thumbnails around the current one: the next media is always the next thumbnail.
+    if (current < 0 || current + 1 >= (await thumbs.count())) break;
+    const before = page.url();
+    await thumbs.nth(current + 1).click();
+    await page.waitForURL((url) => url.href !== before, { timeout: 10000 });
   }
   return media;
 }

@@ -48,8 +48,8 @@ export default {
   "refs.rightsNotAccepted":
     "Flow asks to confirm the rights to the uploaded file {path}, but acceptUploadRights is off. Run: flowpilot config set acceptUploadRights true",
   "download.viewerNotOpened": "Flow did not open the result viewer.",
-  "download.tierLocked": "The requested download tier needs a Flow plan upgrade.",
-  "download.fetchFailed": "Could not download a result (HTTP {status}).",
+  "download.tierLocked":
+    "Flow does not let this account download the requested quality: it shows it disabled or asks for a plan upgrade.",
   "download.upscaleUnavailable":
     "The requested download quality ({quality}) could not be downloaded. The original is still in Flow at {url}.",
   "download.noSource": "Could not find the media file of a result.",

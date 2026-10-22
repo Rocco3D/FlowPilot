@@ -51,8 +51,8 @@ export default {
   "refs.rightsNotAccepted":
     "Flow chiede di confermare i diritti sul file caricato {path}, ma acceptUploadRights è disattivato. Esegui: flowpilot config set acceptUploadRights true",
   "download.viewerNotOpened": "Flow non ha aperto il visualizzatore dei risultati.",
-  "download.tierLocked": "Il tier di download richiesto necessita un aggiornamento del piano Flow.",
-  "download.fetchFailed": "Non riesco a scaricare un risultato (HTTP {status}).",
+  "download.tierLocked":
+    "Flow non permette a questo account di scaricare la qualità richiesta: la mostra disattivata o chiede di passare a un piano superiore.",
   "download.upscaleUnavailable":
     "Non sono riuscito a scaricare la qualità richiesta ({quality}). L'originale è ancora in Flow all'indirizzo {url}.",
   "download.noSource": "Non riesco a trovare il file multimediale di un risultato.",

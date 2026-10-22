@@ -2,13 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  assertFetchAllowed,
   assertSaved,
   chooseTier,
   extensionFor,
   mediaBaseName,
   resultBaseName,
-  tierPattern,
+  tierPatterns,
   writeSummary,
 } from "../../src/flow/download.js";
 import { splitPrompt } from "../../src/flow/prompt.js";
@@ -128,12 +127,15 @@ describe("file naming", () => {
     expect(extensionFor("image", undefined)).toBe(".png");
   });
 
-  it("maps upscale to a tier pattern, the 1080p/2K upscale when left out", () => {
-    expect(tierPattern("original").test("720p Original size")).toBe(true);
-    expect(tierPattern(undefined).test("1080p Upscaled")).toBe(true);
-    expect(tierPattern(undefined).test("2K Upscaled")).toBe(true);
-    expect(tierPattern(undefined).test("4K Upscaled")).toBe(false);
-    expect(tierPattern("4k").test("4K Upscaled")).toBe(true);
+  it("tries only the quality asked for, else 4K, then the upscale, then the original", () => {
+    const tried = (upscale: Parameters<typeof tierPatterns>[0], label: string) =>
+      tierPatterns(upscale).map((re) => re.test(label));
+    expect(tried("original", "720p Original size")).toEqual([true]);
+    expect(tried("4k", "4K Upscaled")).toEqual([true]);
+    expect(tried(undefined, "4K Upscaled")).toEqual([true, false, false]);
+    expect(tried(undefined, "1080p Upscaled")).toEqual([false, true, false]);
+    expect(tried(undefined, "2K Upscaled")).toEqual([false, true, false]);
+    expect(tried(undefined, "1K Original size")).toEqual([false, false, true]);
   });
 
   it("chooses the tier item and rejects gated or disabled ones", () => {
@@ -141,27 +143,42 @@ describe("file naming", () => {
       (label) => ({ label, disabled: false }),
     );
     const open = (label: string) => [{ label, disabled: false }];
-    expect(chooseTier(items, tierPattern("original"))).toEqual({ kind: "pick", index: 1 });
-    expect(chooseTier(items, tierPattern(undefined))).toEqual({ kind: "pick", index: 2 });
-    expect(chooseTier(items, tierPattern("4k"))).toEqual({ kind: "pick", index: 3 });
-    expect(chooseTier(open("2K Upscaled"), tierPattern(undefined))).toEqual({
+    expect(chooseTier(items, tierPatterns("original"))).toEqual({ kind: "pick", index: 1 });
+    expect(chooseTier(items, tierPatterns(undefined))).toEqual({ kind: "pick", index: 3 });
+    expect(chooseTier(items, tierPatterns("4k"))).toEqual({ kind: "pick", index: 3 });
+    expect(chooseTier(open("4K Upgrade"), tierPatterns("4k"))).toEqual({ kind: "locked" });
+    expect(chooseTier([{ label: "4K Upscaled", disabled: true }], tierPatterns("4k"))).toEqual({
+      kind: "locked",
+    });
+    expect(chooseTier(open("720p Original size"), tierPatterns("4k"))).toEqual({ kind: "none" });
+  });
+
+  it("downloads the best the user's plan offers when no quality is asked for", () => {
+    const menu = (upscale: Partial<{ label: string; disabled: boolean }> | undefined) => [
+      { label: "1K Original size", disabled: false },
+      ...(upscale ? [{ label: "2K Upscaled", disabled: false, ...upscale }] : []),
+      { label: "4K Upscaled", disabled: true },
+    ];
+    // 4K when the plan offers it.
+    const with4k = menu({}).map((item) => ({ ...item, disabled: false }));
+    expect(chooseTier(with4k, tierPatterns(undefined))).toEqual({ kind: "pick", index: 2 });
+    // The upscale when 4K is disabled.
+    expect(chooseTier(menu({}), tierPatterns(undefined))).toEqual({ kind: "pick", index: 1 });
+    // The original when the upscale is disabled, asks for an upgrade, or is not there at all.
+    expect(chooseTier(menu({ disabled: true }), tierPatterns(undefined))).toEqual({
       kind: "pick",
       index: 0,
     });
-    expect(chooseTier(open("4K Upgrade"), tierPattern("4k"))).toEqual({ kind: "locked" });
-    expect(chooseTier([{ label: "4K Upscaled", disabled: true }], tierPattern("4k"))).toEqual({
-      kind: "locked",
+    expect(chooseTier(menu({ label: "2K Upgrade" }), tierPatterns(undefined))).toEqual({
+      kind: "pick",
+      index: 0,
     });
-    expect(chooseTier(open("720p Original size"), tierPattern("4k"))).toEqual({ kind: "none" });
-  });
-
-  it("allows the direct fetch only for the original quality", () => {
-    expect(() => assertFetchAllowed("original", "https://flow/p")).not.toThrow();
-    for (const upscale of [undefined, "1080p"] as const) {
-      expect(() => assertFetchAllowed(upscale, "https://flow/p")).toThrowError(
-        expect.objectContaining({ code: "upscale_unavailable" }),
-      );
-    }
+    expect(chooseTier(menu(undefined), tierPatterns(undefined))).toEqual({
+      kind: "pick",
+      index: 0,
+    });
+    // A quality asked for that the plan does not offer is refused, never replaced.
+    expect(chooseTier(menu({ disabled: true }), tierPatterns("1080p"))).toEqual({ kind: "locked" });
   });
 
   it("names a downloaded media after its project and id, without characters Windows refuses", () => {

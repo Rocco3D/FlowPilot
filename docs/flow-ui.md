@@ -11,7 +11,7 @@ person would. This is what it touches, what it assumes about it, and what to che
   project on the grid, in Flow's own order, or creates one when the grid is empty.
 - **Project page** (the composer): where a job runs.
 - **Media viewer** (`/project/<project>/edit/<id>`): one media of the project, opened by clicking it or straight from
-  its address. It has a _Download media_ button, a rail with a thumbnail of every media in the project, and controls
+  its address. It has a _Download media_ button, a rail with the thumbnails of the media around the one open, and controls
   that tell the type: _Save frame_ for a video, the cropping button for an image.
 
 `hl=en` is forced on every Flow URL. Flow follows the Google account language, and the selectors expect the English
@@ -35,7 +35,7 @@ What a job needs on the project page:
 | Credit line (`Use N credits`)                                                                           | The cost, read before submitting                                            |
 | Add media dialog, ingredient chips, frame slots                                                         | Reference images, characters, start and end frames                          |
 | Loading indicator                                                                                       | Telling "still generating" from "finished"                                  |
-| Tile menu (_More options_ > _Download_), viewer _Download media_ button                                 | Downloading each result                                                     |
+| Viewer _Download media_ button                                                                          | Downloading each result                                                     |
 | Quality menu (`1K Original size`, `2K Upscaled`, `720p Original size`, `1080p Upscaled`, `4K Upscaled`) | Choosing the download quality                                               |
 | Viewer thumbnail rail                                                                                   | Listing the media of a project                                              |
 
@@ -46,9 +46,10 @@ What a job needs on the project page:
    difference stops the job with `settings_not_applied` **before** anything is submitted.
 3. Read the cost and check it against your limits.
 4. Upload the references, type the prompt, submit.
-5. Wait for the results, matching each new result by its `data-media-id` so results from earlier jobs in the same
-   project are never mistaken for this job's.
-6. Download each result at the quality asked for (the 1080p/2K upscale by default), write a JSON summary next to it,
+5. Wait for the results, matching each new result by its `data-media-id`, or for a video, which has none, by its
+   thumbnail address, so results from earlier jobs in the same project are never mistaken for this job's.
+6. Open each result in the viewer and download it from _Download media_ at the quality asked for, or by default at
+   the best the plan offers (4K, else the 1080p/2K upscale, else the original), write a JSON summary next to it,
    record what was spent.
 
 Step 2 is the reason FlowPilot is careful about the model: the model actually in effect is compared with the one
@@ -58,12 +59,17 @@ asked for, so a request that silently ran with another model is a failure, not a
 
 - **The quality menu ignores the mouse** on its upscaled items: a click does nothing. FlowPilot selects the item from
   the keyboard, which works for every item.
-- **A quality the plan does not include** is either marked _Upgrade_ or shown disabled. FlowPilot never picks either.
+- **A quality the plan does not include** is marked _Upgrade_, shown disabled, or missing. FlowPilot never picks it:
+  without a quality asked for, it takes the next one down.
 - **A file you uploaded** has no quality menu: _Download media_ downloads it as it is.
 - **The grid unmounts** the media that scroll out of view, and a video tile carries no media id. The media list walks
-  the viewer's rail instead, which holds every media at once, and reads each id from the viewer's address.
-- **A video has two ids**: the one in its viewer address and the one in its file address, which a job records. The
-  viewer opens from either.
+  the viewer's rail instead, one thumbnail after the other, because the rail renders only the thumbnails around the
+  media open. Each id comes from the viewer's address.
+- **Right after a generation**, the viewer opened from the media's address keeps _Download media_ disabled; opened by
+  clicking the result on the grid, it has the button enabled at once. A job opens its results by clicking them.
+- **An image has two ids**: the one in its viewer address, which the media list gives and a job records, and the one
+  on its image in the project grid (`data-media-id`), which the error of a failed job lists. The viewer opens from
+  either.
 
 ## What it does not do
 

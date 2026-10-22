@@ -230,7 +230,7 @@ Provide a JSON object with the following fields (from `JobRequest`):
 - `characters` (array of strings, optional): Reference characters
 - `project` (string, optional): Project identifier
 - `outDir` (string, optional): Output directory path. Defaults to the configured output folder.
-- `upscale` (string, optional): Download quality: "original", "1080p" (the 2K upscale for images) or "4k". Left out, the 1080p/2K upscale, which costs no credits on the owner's plan. "4k" is used only when asked for: it may cost credits, and Flow offers it only on some plans. A quality Flow does not offer, or offers only after a plan upgrade, fails the job with `download_tier_locked` or `upscale_unavailable` instead of downloading another quality
+- `upscale` (string, optional): Download quality: "original", "1080p" (the 2K upscale for images) or "4k". Left out, the best quality the user's Flow plan offers: 4K when the plan has it, else the 1080p/2K upscale, otherwise the original. A quality asked for is the only one tried: if Flow does not offer it, shows it disabled, or offers it only after a plan upgrade, the job fails with `download_tier_locked` or `upscale_unavailable` instead of downloading another quality
 - `maxCredits` (integer, optional): Per-job credit limit for this job; it can only lower `maxCreditsPerJob`, never raise it (raise it with `confirm`)
 - `confirm` (boolean, optional): `true` lets this job exceed both the per-job and monthly credit limits, whatever `maxCredits` says
 
@@ -438,9 +438,22 @@ viewer to read its id, so the list takes about two seconds per media.
 - `project` (object): The project listed, with its `id` and `name`.
 - `queued` (boolean): `true` when the list had to wait for a running job.
 - `media` (array): One entry per media, in Flow's order.
-  - `id` (string): The id in the media's Flow address (`/project/<project>/edit/<id>`). For a video it can differ from the `mediaId` a job recorded for the same video: `POST /media/download` accepts both.
+  - `id` (string): The id in the media's Flow address (`/project/<project>/edit/<id>`), the same a job records in `results[].mediaId`. An image also has a second id, the one the error of a failed job lists: `POST /media/download` accepts both.
   - `type` (string): "image" or "video".
   - `title` (string): The title Flow shows. Flow reuses titles, so two media can have the same one: use the id.
+
+**PowerShell Example:**
+
+```powershell
+$token = Get-Content "$env:APPDATA\FlowPilot\token"
+
+$list = Invoke-RestMethod `
+  -Method Get `
+  -Uri "http://127.0.0.1:47820/media?project=My%20project" `
+  -Headers @{ "Authorization" = "Bearer $token" }
+
+$list.media | Format-Table id, type, title
+```
 
 **curl Example:**
 
@@ -454,7 +467,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 Queues the download of a media already in a Flow project, as a job. It generates nothing and spends no credits: it is
 the way to get a result back without generating it again, for example after a job that failed once Flow had already
-generated (its error lists the media ids).
+generated (the error of a failed image job lists the media ids).
 
 **Request Body:**
 
@@ -486,6 +499,25 @@ The queued job. Follow it with `GET /jobs/:id`: when it is `done`, `results` hol
 ```
 
 A media id that Flow does not show in the project fails the job with `media_not_found`.
+
+**PowerShell Example:**
+
+```powershell
+$token = Get-Content "$env:APPDATA\FlowPilot\token"
+$body = @{
+    mediaId = "38ad2cc9-bd6e-459a-8a39-1bd35d4d887b"
+    project = "My project"
+} | ConvertTo-Json
+
+$response = Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://127.0.0.1:47820/media/download" `
+  -Headers @{ "Authorization" = "Bearer $token" } `
+  -ContentType "application/json" `
+  -Body $body
+
+$response.id
+```
 
 **curl Example:**
 
@@ -594,7 +626,7 @@ The `Job` object represents a generation task, or the download of a media alread
 - `note` (string, optional): Something worth telling the user about how the job ran, in words. Present when a configured default model Flow no longer offers was replaced by its successor, so the client can show why the job used a different model.
 - `error` (object, optional): Error details if the job failed.
   - `code` (string): Error code (e.g., "credits_over_job_limit", "agent_mode_on").
-  - `message` (string): Human-readable message. When a generation fails after Flow already produced its media, the message lists their ids, to download them with `POST /media/download` instead of generating them again.
+  - `message` (string): Human-readable message. When a generation fails after Flow already produced its media, the message lists their ids for an image job (a video tile in Flow carries no id), to download them with `POST /media/download` instead of generating them again; `GET /media` finds them otherwise.
   - `detail` (string, optional): First line of the original error when the failure was unexpected.
 
 ## Job Statuses
@@ -605,7 +637,7 @@ Jobs progress through the following statuses:
 - `running`: Generation in progress, or a download job opening its project.
 - `downloading`: Downloading the content.
 - `done`: Completed successfully.
-- `failed`: Generation failed.
+- `failed`: The job failed.
 - `cancelled`: Job was cancelled by the user.
 - `interrupted`: Job was interrupted (e.g., server shutdown).
 

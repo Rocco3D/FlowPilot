@@ -3,7 +3,7 @@ import { z } from "zod";
 export const JobType = z.enum(["video", "image"]);
 export type JobType = z.infer<typeof JobType>;
 
-/** Download quality; left out, the 1080p/2K upscale, never the 4K one, which may cost credits. */
+/** Download quality; left out, the best the user's plan offers. */
 export const Upscale = z.enum(["original", "1080p", "4k"]);
 export type Upscale = z.infer<typeof Upscale>;
 

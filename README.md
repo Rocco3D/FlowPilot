@@ -99,7 +99,7 @@ flowpilot video --prompt "A flowing waterfall" --model "Omni 1.1 Flash" --resolu
 - `--no-wait`: Submit the job and exit immediately (by default, the CLI waits for the job to finish)
 - `--json`: Output JSON instead of human-readable text
 - `--out ~/Downloads`: Save results to a custom folder (default: configured output folder)
-- `--upscale 4k`: Download quality: `original`, `1080p` (2K for images) or `4k`. Left out, FlowPilot downloads the 1080p/2K upscale, which costs no credits on the owner's plan; 4K only when asked for, because it may cost credits
+- `--upscale 4k`: Download quality: `original`, `1080p` (2K for images) or `4k`. Left out, FlowPilot downloads the best quality your Flow plan offers: 4K when the plan has it, else the 1080p/2K upscale, otherwise the original. A quality asked for that the plan does not offer fails the job
 - `--max-credits 10`: Lower the per-job credit limit for this run (it can never raise it)
 - `--confirm`: Allow the job to exceed the per-job and monthly credit limits
 
@@ -222,20 +222,20 @@ flowpilot config get outputDir          # Show one setting
 flowpilot config set outputDir ~/Videos # Change a setting
 ```
 
-| Key                  | Default               | Meaning                                           |
-| -------------------- | --------------------- | ------------------------------------------------- |
-| `outputDir`          | `Documents\FlowPilot` | Where to save generated files                     |
-| `defaultVideoModel`  | (auto)                | Model for video jobs without `--model`            |
-| `defaultImageModel`  | (auto)                | Model for image jobs without `--model`            |
-| `outputs`            | 1                     | Outputs per job when none is requested (1–4)      |
-| `maxCreditsPerJob`   | 20                    | Per-job credit limit                              |
-| `monthlyCreditLimit` | 1000                  | Monthly credit budget                             |
-| `locale`             | (auto)                | Language: `en` or `it`; auto-detect from system   |
-| `port`               | 47820                 | HTTP API port                                     |
-| `logLevel`           | info                  | Log level: debug, info, warn, error               |
-| `acceptUploadRights` | true                  | Auto-accept rights dialog for uploads             |
-| `idleMinutes`        | 30                    | Minutes before the service auto-stops (0 = never) |
-| `showBrowser`        | false                 | Show the automation window (normally off-screen)  |
+| Key                  | Default               | Meaning                                                                                                  |
+| -------------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
+| `outputDir`          | `Documents\FlowPilot` | Where to save generated files                                                                            |
+| `defaultVideoModel`  | (auto)                | Model for video jobs without `--model`                                                                   |
+| `defaultImageModel`  | (auto)                | Model for image jobs without `--model`                                                                   |
+| `outputs`            | 1                     | Outputs per job when none is requested (1–4)                                                             |
+| `maxCreditsPerJob`   | 20                    | Per-job credit limit                                                                                     |
+| `monthlyCreditLimit` | 1000                  | Monthly credit budget                                                                                    |
+| `locale`             | (auto)                | Language: `en` or `it`; auto-detect from system                                                          |
+| `port`               | 47820                 | HTTP API port                                                                                            |
+| `logLevel`           | info                  | Log level: debug, info, warn, error                                                                      |
+| `acceptUploadRights` | true                  | Auto-accept rights dialog for uploads                                                                    |
+| `idleMinutes`        | 30                    | Minutes before the service auto-stops (0 = never)                                                        |
+| `showBrowser`        | false                 | Show the automation window on the left half of the screen, to watch FlowPilot work (normally off-screen) |
 
 With no `defaultVideoModel` or `defaultImageModel` the model already selected in Flow is used.
 

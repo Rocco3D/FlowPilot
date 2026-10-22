@@ -99,7 +99,7 @@ flowpilot video --prompt "Una cascata che scorre" --model "Omni 1.1 Flash" --res
 - `--no-wait`: Invia il job e esci subito (per default, la CLI attende che il job finisca)
 - `--json`: Restituisci JSON invece di testo leggibile
 - `--out ~/Downloads`: Salva i risultati in una cartella personalizzata (default: cartella output configurata)
-- `--upscale 4k`: Aumenta la risoluzione del risultato (1080p o 4k)
+- `--upscale 4k`: Qualità del download: `original`, `1080p` (2K per le immagini) o `4k`. Se non indicata, FlowPilot scarica la qualità migliore che il tuo piano Flow offre: 4K se il piano la include, altrimenti l'upscale 1080p/2K, altrimenti l'originale. Una qualità chiesta che il piano non offre fa fallire il job
 - `--max-credits 10`: Abbassa il limite di crediti per job di questa esecuzione (non può mai aumentarlo)
 - `--confirm`: Consenti al job di superare i limiti per job e mensile
 
@@ -196,6 +196,13 @@ flowpilot cancel <id>
 
 Annullare un job che è già in esecuzione o in download non ha effetto.
 
+### Media già in Flow
+
+Le immagini e i video già presenti in un progetto Flow, da un job precedente, da un altro strumento o da un caricamento,
+si possono elencare e scaricare di nuovo senza generare niente e senza spendere crediti, dall'[API HTTP](docs/api.md)
+(`GET /media`, `POST /media/download`) o dal [server MCP](docs/mcp.md) (`list_media`, `download_media`). Non c'è un
+comando della CLI. Il file viene salvato come `<progetto>-media-<id>`.
+
 ### Arresto del servizio
 
 Ferma il servizio e chiudi la finestra del browser:
@@ -216,20 +223,22 @@ flowpilot config get outputDir          # Mostra un'impostazione
 flowpilot config set outputDir ~/Video  # Cambia un'impostazione
 ```
 
-| Chiave               | Default               | Significato                                                                  |
-| -------------------- | --------------------- | ---------------------------------------------------------------------------- |
-| `outputDir`          | `Documents\FlowPilot` | Dove salvare i file generati                                                 |
-| `defaultVideoModel`  | (auto)                | Modello per i job video senza `--model`                                      |
-| `defaultImageModel`  | (auto)                | Modello per i job image senza `--model`                                      |
-| `outputs`            | 1                     | Output per job quando non ne sono richiesti (1–4)                            |
-| `maxCreditsPerJob`   | 20                    | Limite di crediti per job                                                    |
-| `monthlyCreditLimit` | 1000                  | Budget mensile di crediti                                                    |
-| `locale`             | (auto)                | Lingua: `en` o `it`; rilevamento automatico dal sistema                      |
-| `port`               | 47820                 | Porta dell'API HTTP                                                          |
-| `logLevel`           | info                  | Livello di log: debug, info, warn, error                                     |
-| `acceptUploadRights` | true                  | Accetta automaticamente la finestra di dialogo dei diritti per i caricamenti |
-| `idleMinutes`        | 30                    | Minuti prima che il servizio si fermi automaticamente (0 = mai)              |
-| `showBrowser`        | false                 | Mostra la finestra di automazione (normalmente fuori schermo)                |
+| Chiave               | Default               | Significato                                                                                                                    |
+| -------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `outputDir`          | `Documents\FlowPilot` | Dove salvare i file generati                                                                                                   |
+| `defaultVideoModel`  | (auto)                | Modello per i job video senza `--model`                                                                                        |
+| `defaultImageModel`  | (auto)                | Modello per i job image senza `--model`                                                                                        |
+| `outputs`            | 1                     | Output per job quando non ne sono richiesti (1–4)                                                                              |
+| `maxCreditsPerJob`   | 20                    | Limite di crediti per job                                                                                                      |
+| `monthlyCreditLimit` | 1000                  | Budget mensile di crediti                                                                                                      |
+| `locale`             | (auto)                | Lingua: `en` o `it`; rilevamento automatico dal sistema                                                                        |
+| `port`               | 47820                 | Porta dell'API HTTP                                                                                                            |
+| `logLevel`           | info                  | Livello di log: debug, info, warn, error                                                                                       |
+| `acceptUploadRights` | true                  | Accetta automaticamente la finestra di dialogo dei diritti per i caricamenti                                                   |
+| `idleMinutes`        | 30                    | Minuti prima che il servizio si fermi automaticamente (0 = mai)                                                                |
+| `showBrowser`        | false                 | Mostra la finestra di automazione sulla metà sinistra dello schermo, per vedere FlowPilot lavorare (normalmente fuori schermo) |
+
+Senza `defaultVideoModel` o `defaultImageModel` viene usato il modello già selezionato in Flow.
 
 Le modifiche a `idleMinutes`, `showBrowser` e `locale` valgono dal prossimo avvio del servizio (dopo `flowpilot stop` o una chiusura automatica). `defaultVideoModel`, `defaultImageModel` e `outputs` vengono lette a ogni job creato. FlowPilot riscrive `defaultVideoModel` e `defaultImageModel` quando Flow ritira il modello configurato e offre la versione successiva dello stesso nome; `outputs`, i limiti e la lingua li cambi solo tu.
 
@@ -294,8 +303,9 @@ Le schede aperte in quella finestra si perdono. È il comportamento previsto, no
 
 ### Cosa non funziona
 
-[docs/known-issues.md](docs/known-issues.md) elenca i limiti da conoscere: un job alla volta, solo i risultati prodotti
-dal job in corso, nessun retry automatico, Flow pilotato in inglese e la chiusura per inattività.
+[docs/known-issues.md](docs/known-issues.md) elenca i limiti da conoscere: un job alla volta, media già in Flow
+raggiungibili solo dall'API HTTP e dal server MCP, qualità del download, nessun retry automatico, Flow pilotato in
+inglese e la chiusura per inattività.
 
 ### Log
 

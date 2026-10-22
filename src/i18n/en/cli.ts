@@ -56,7 +56,7 @@ export default {
   "generate.projectOption": "Flow project name",
   "generate.outOption": "Output directory",
   "generate.upscaleOption":
-    "Download quality: original, 1080p (2K for images) or 4k; left out, the 1080p/2K upscale",
+    "Download quality: original, 1080p (2K for images) or 4k; left out, the best your plan offers",
   "generate.maxCreditsOption":
     "Refuse to run if the job costs more credits than this (it can only lower the configured limit)",
   "generate.confirmOption": "Allow the job to exceed the credit limits",

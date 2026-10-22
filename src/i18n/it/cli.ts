@@ -57,7 +57,7 @@ export default {
   "generate.projectOption": "Nome del progetto Flow",
   "generate.outOption": "Cartella di output",
   "generate.upscaleOption":
-    "Qualità del download: original, 1080p (2K per le immagini) o 4k; se non indicata, l'upscale 1080p/2K",
+    "Qualità del download: original, 1080p (2K per le immagini) o 4k; se non indicata, la migliore che il tuo piano offre",
   "generate.maxCreditsOption":
     "Rifiuta di eseguire se il job costa più crediti di questo (può solo abbassare il limite configurato)",
   "generate.confirmOption": "Consenti al job di superare i limiti di crediti",
