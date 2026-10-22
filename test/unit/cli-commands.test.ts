@@ -254,6 +254,9 @@ describe("cli jobs, credits and config", () => {
     expect(await cli("config", "get")).toBe(0);
     expect(out.at(-1)).toBe("port=47820\noutputs=1");
     expect(await cli("config", "get", "nope")).toBe(1);
+    // A known key that is not set is not an unknown key.
+    expect(await cli("config", "get", "defaultVideoModel")).toBe(0);
+    expect(out.at(-1)).toBe("");
     expect(await cli("config", "set", "outputs", "3")).toBe(0);
     expect(out.at(-1)).toBe("outputs=3");
     expect(seen.find((s) => s.method === "PUT")?.body).toEqual({ value: "3" });

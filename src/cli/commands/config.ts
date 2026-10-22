@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { Config } from "../../core/config.js";
 import { FlowPilotError } from "../../core/errors.js";
 import { t } from "../../i18n/index.js";
 import { connect, show, type JsonOpt } from "../context.js";
@@ -25,9 +26,10 @@ export function registerConfig(program: Command): void {
         );
         return;
       }
-      if (!(key in all))
+      if (!(key in Config.shape))
         throw new FlowPilotError("config_unknown_key", "core.config.unknownKey", { key });
-      show(opts, all[key], () => format(all[key]));
+      // A key that is not set prints nothing.
+      show(opts, all[key] ?? null, () => (all[key] === undefined ? "" : format(all[key])));
     });
 
   config
