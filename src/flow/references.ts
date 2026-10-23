@@ -233,7 +233,8 @@ async function pickFrame(page: Page, file: string, opts: UploadOptions): Promise
       .waitFor({ state: "visible", timeout: 2000 })
       .then(() => true)
       .catch(() => false);
-    if (shown) await clickRobust(confirm);
+    // Flow can close the panel by itself between the check and the click: that is success, not an error.
+    if (shown) await clickRobust(confirm).catch(() => undefined);
   }
   await panel.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {
     throw new FlowPilotError("references_not_attached", "flow.refs.framePanelNotOpen");

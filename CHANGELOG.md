@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.5] - 2026-10-23
+
+### Fixed
+
+- The first job that uploads new reference images no longer fails with `internal` / `locator.click: Timeout 2000ms exceeded`. After an upload Flow can close the asset picker by itself between the check for the "Add to prompt" button and the click on it; that is now treated as success, and the job still checks that the picker is closed and the references are attached
+
 ## [0.1.4] - 2026-10-17
 
 ### Changed
