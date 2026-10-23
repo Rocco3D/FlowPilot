@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Flow projects can be listed, most recent first: `flowpilot projects`, `GET /projects`, `list_projects`
 - A Flow project can be deleted, by its exact name or its id: `flowpilot delete-project`, `DELETE /projects/:project`, `delete_project`. It always asks for confirmation: the CLI asks in the terminal (`--yes` without one), the HTTP API wants `confirm: true`, the MCP tool tells the assistant to ask the user
 - Media already in a Flow project can be listed and downloaded again without generating anything or spending credits: `GET /media` and `POST /media/download` in the HTTP API, `list_media` and `download_media` in the MCP server. The download is a job in the queue; the list waits for a running job and says so (`queued`). The file is saved as `<project>-media-<id>`
-- An image job that fails after Flow already generated its media lists their ids in the error, so they can be downloaded instead of generated again
+- An image job that fails after finding its results in Flow (for example while downloading them) lists their ids in the error, so they can be downloaded instead of generated again
 - `upscale` accepts `original`, to ask for the file as generated
 
 ### Changed

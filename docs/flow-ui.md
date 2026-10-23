@@ -7,7 +7,7 @@ person would. This is what it touches, what it assumes about it, and what to che
 
 - **Home** (`https://flow.google.com/?hl=en`): where the sign-in state is read from. Signed in means the _New project_
   button or the prompt box is visible, not signed in means the _Sign in_ button is.
-- **Project grid**: projects are found by their `/project/<uuid>` links, in Flow's order, which is by creation, not by
+- **Project grid**: projects are found by their `/project/<uuid>` links, once the page's loading indicator is gone, in Flow's order, which is by creation, not by
   last use. A job without a project opens the first project on the grid, or creates one when the grid is empty. A job
   with a new project clicks _New project_ and, when a name is given, types it in the project title. When the home shows
   _Error loading projects_, FlowPilot reloads it, at most twice, instead of reading an empty grid; Flow shows that
@@ -41,7 +41,6 @@ What a job needs on the project page:
 | Output chips (`x1`–`x4`), resolution chips (`720p`, `1080p`), duration chips (`4s`)                     | Reading the settings currently in effect                                    |
 | Credit line (`Use N credits`)                                                                           | The cost, read before submitting                                            |
 | Add media dialog, ingredient chips, frame slots                                                         | Reference images, characters, start and end frames                          |
-| Loading indicator                                                                                       | Telling "still generating" from "finished"                                  |
 | Viewer _Download media_ button                                                                          | Downloading each result                                                     |
 | Quality menu (`1K Original size`, `2K Upscaled`, `720p Original size`, `1080p Upscaled`, `4K Upscaled`) | Choosing the download quality                                               |
 | Viewer thumbnail rail                                                                                   | Listing the media of a project                                              |
@@ -84,8 +83,8 @@ asked for, so a request that silently ran with another model is a failure, not a
 ## What it does not do
 
 - **Agent mode**: not driven. It is detected, and if it cannot be turned off the job fails with `agent_mode_on`.
-- **Renaming in Flow**: not done. Flow reuses titles and makes them unreadable; results keep the names FlowPilot
-  gives them on disk.
+- **Renaming results in Flow**: not done. Flow reuses titles and makes them unreadable; results keep the names
+  FlowPilot gives them on disk. Only a new project is named, when the job asks for a name.
 - **Batch jobs**: one job per project page state, one at a time.
 
 ## When Flow changes

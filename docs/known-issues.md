@@ -45,8 +45,8 @@ Flow waits for it to finish; for `doctor` that is about half a minute the first 
 
 ## Media already in Flow
 
-A job downloads the files Flow produced while it was running, matched to the results that appeared during that
-window. Anything else already in a Flow project, a video made yesterday or an image you uploaded, is reached through
+A job downloads the results it produced, which it finds at the top of the project's grid, where Flow shows the newest
+first. Anything else already in a Flow project, a video made yesterday or an image you uploaded, is reached through
 the HTTP API (`GET /media`, `POST /media/download`) or the MCP tools (`list_media`, `download_media`): the list gives
 each media's id, and the download fetches it without generating anything or spending credits. There is no CLI
 command for it.
@@ -81,8 +81,15 @@ you uploaded to Flow has no quality to choose and is downloaded as it is. FlowPi
 be opened, the job fails with `viewer_not_opened`: the media stays in Flow and can be downloaded later.
 
 A downloaded file counts only when it is on disk and not empty; otherwise the job fails with `download_failed`. When
-an image job fails after Flow already generated its media, the error lists their ids (a video tile in Flow carries
+an image job fails after finding its results in Flow (for example while downloading them), the error lists their ids (a video tile in Flow carries
 no id), so they can be downloaded instead of generated again; otherwise `GET /media` or `list_media` finds them.
+
+## The project grid must show the newest first
+
+A job takes its results from the top of the project's grid, because in a project with many media Flow draws only part
+of the grid and keeps changing which part, so older media keep appearing on the page. If the grid is sorted
+otherwise (Flow's _Filtering and sorting options_), the new result is not at the top and the job ends with
+`generation_timeout`, although Flow made it: download it with `POST /media/download` or `download_media`.
 
 ## A result Flow made but did not show
 
@@ -138,5 +145,5 @@ is left.
 
 Reference images, start frames and end frames are uploaded through the Flow page, so they are subject to Flow's own
 limits on number, size and format. Google's rights confirmation dialog is accepted automatically
-(`acceptUploadRights`, on by default); if you turn it off, the dialog has to be accepted by hand while the job runs,
-and the job fails if it is not.
+(`acceptUploadRights`, on by default); if you turn it off, FlowPilot cancels the dialog and the job fails with
+`upload_rights_not_accepted`.

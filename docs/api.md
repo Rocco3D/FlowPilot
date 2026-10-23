@@ -228,7 +228,7 @@ Provide a JSON object with the following fields (from `JobRequest`):
 - `endFrame` (string, optional): Path to an ending frame image
 - `ingredients` (array of strings, optional): Reference images or media
 - `characters` (array of strings, optional): Reference characters
-- `project` (string, optional): Name or id of an existing project, as listed by `GET /projects`. With neither `project` nor `newProject`, the job runs in the most recent project, or in a new one when the account has none
+- `project` (string, optional): Name or id of an existing project, as listed by `GET /projects`; a name that matches no project exactly is looked for as part of a project name. With neither `project` nor `newProject`, the job runs in the most recent project, or in a new one when the account has none
 - `newProject` (`true` or string, optional): Runs the job in a new project: `true` keeps the name Flow gives it (the date and time), a string names it. Not together with `project`: the request fails with HTTP 400. If Flow does not save the name, the job fails with `project_not_renamed`
 - `outDir` (string, optional): Output directory path. Defaults to the configured output folder.
 - `upscale` (string, optional): Download quality: "original", "1080p" (the 2K upscale for images) or "4k". Left out, the best quality the user's Flow plan offers: 4K when the plan has it, else the 1080p/2K upscale, otherwise the original. A quality asked for is the only one tried: if Flow does not offer it, shows it disabled, or offers it only after a plan upgrade, the job fails with `download_tier_locked` or `upscale_unavailable` instead of downloading another quality
@@ -449,7 +449,10 @@ request fails with HTTP 409 and `job_running`.
 
 ```bash
 TOKEN=$(cat ~/.config/flowpilot/token)
-curl -X DELETE "http://127.0.0.1:47820/projects/My%20project"   -H "Authorization: Bearer $TOKEN"   -H "Content-Type: application/json"   -d '{ "confirm": true }'
+curl -X DELETE "http://127.0.0.1:47820/projects/My%20project" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "confirm": true }'
 ```
 
 ### GET /media
@@ -516,7 +519,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 Queues the download of a media already in a Flow project, as a job. It generates nothing and spends no credits: it is
 the way to get a result back without generating it again, for example after a job that failed once Flow had already
-generated (the error of a failed image job lists the media ids).
+generated (an image job that fails after finding its results in Flow (for example while downloading them) lists their ids in its error).
 
 **Request Body:**
 
@@ -675,7 +678,7 @@ The `Job` object represents a generation task, or the download of a media alread
 - `note` (string, optional): Something worth telling the user about how the job ran, in words. Present when a configured default model Flow no longer offers was replaced by its successor, so the client can show why the job used a different model.
 - `error` (object, optional): Error details if the job failed.
   - `code` (string): Error code (e.g., "credits_over_job_limit", "agent_mode_on").
-  - `message` (string): Human-readable message. When a generation fails after Flow already produced its media, the message lists their ids for an image job (a video tile in Flow carries no id), to download them with `POST /media/download` instead of generating them again; `GET /media` finds them otherwise.
+  - `message` (string): Human-readable message. When a generation fails after finding its results in Flow (for example while downloading them), the message lists their ids for an image job (a video tile in Flow carries no id), to download them with `POST /media/download` instead of generating them again; `GET /media` finds them otherwise.
   - `detail` (string, optional): First line of the original error when the failure was unexpected.
 
 ## Job Statuses

@@ -222,7 +222,7 @@ Cancel a queued job:
 flowpilot cancel <id>
 ```
 
-Cancelling a job that is already running or downloading has no effect.
+A job that is already running or downloading cannot be cancelled: the command fails with `job_not_cancellable`.
 
 ### Media already in Flow
 
@@ -332,8 +332,8 @@ Tabs open in that window are lost. This is expected, not a failure.
 ### Things that do not work
 
 [docs/known-issues.md](docs/known-issues.md) lists the limits worth knowing: one job at a time, media already in
-Flow reachable only from the HTTP API and the MCP server, download quality, no automatic retry, Flow driven in
-English, and the idle shutdown.
+Flow reachable only from the HTTP API and the MCP server, download quality, the project grid shown newest first, no
+automatic retry, Flow driven in English, and the idle shutdown.
 
 ### Logs
 

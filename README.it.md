@@ -87,6 +87,35 @@ flowpilot video --prompt-file prompt.md --model "Veo 3.1 - Lite"
 flowpilot video --prompt "Una cascata che scorre" --model "Omni 1.1 Flash" --resolution 720p --duration 4
 ```
 
+### Progetti
+
+Un job gira in un progetto Flow. In un terminale, un job senza `--project` né `--new-project` chiede se continuare il
+progetto più recente o crearne uno nuovo, e Invio continua. Senza terminale (uno script, l'API HTTP) continua il
+progetto più recente.
+
+- `--project "Il mio progetto"`: Continua un progetto esistente, per nome o id
+- `--new-project "Il mio progetto"`: Crea un progetto nuovo con questo nome; `--new-project` da solo tiene il nome che
+  gli dà Flow (data e ora)
+
+Il progetto più recente è il primo della griglia dei progetti di Flow, che Flow ordina per creazione, non per ultimo
+uso. Elenca i progetti, dal più recente:
+
+```bash
+flowpilot projects
+```
+
+Mentre un job è in corso l'elenco fallisce con `job_running`: riprova quando il job finisce.
+
+Elimina un progetto con tutti i suoi media. Non si può annullare:
+
+```bash
+flowpilot delete-project "Il mio progetto"
+```
+
+Il progetto si indica con il nome esatto o con l'id: un nome parziale non corrisponde mai, e se due progetti hanno lo
+stesso nome FlowPilot si rifiuta e mostra i loro id. In un terminale chiede conferma, con il nome e l'id del progetto;
+senza terminale serve `--yes`.
+
 ### Opzioni avanzate
 
 - `--ratio 16:9`: Proporzioni (immagini e video; il default dipende dal modello)
@@ -194,7 +223,7 @@ Annulla un job in coda:
 flowpilot cancel <id>
 ```
 
-Annullare un job che è già in esecuzione o in download non ha effetto.
+Un job già in esecuzione o in download non si può annullare: il comando fallisce con `job_not_cancellable`.
 
 ### Media già in Flow
 
@@ -304,8 +333,8 @@ Le schede aperte in quella finestra si perdono. È il comportamento previsto, no
 ### Cosa non funziona
 
 [docs/known-issues.md](docs/known-issues.md) elenca i limiti da conoscere: un job alla volta, media già in Flow
-raggiungibili solo dall'API HTTP e dal server MCP, qualità del download, nessun retry automatico, Flow pilotato in
-inglese e la chiusura per inattività.
+raggiungibili solo dall'API HTTP e dal server MCP, qualità del download, la griglia del progetto ordinata dal più
+recente, nessun retry automatico, Flow pilotato in inglese e la chiusura per inattività.
 
 ### Log
 

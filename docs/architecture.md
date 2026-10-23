@@ -6,14 +6,14 @@ FlowPilot is a service that automates Google Flow interactions. Here is how it i
 
 - **src/cli**: The `flowpilot` command-line tool; talks to the service over the local HTTP API.
 - **src/server**: Local HTTP API with bearer token authentication; also hosts the MCP server over stdio that calls the HTTP API.
-- **src/core**: Service lifecycle, job store and serial queue, credit ledger and limits, config, paths, logger, update check (compares the installed version with `package.json` on GitHub's `main` branch).
+- **src/core**: Service lifecycle, job store and serial queue, credit ledger and limits, config, paths, logger, the choice of a project by exact name or id, update check (compares the installed version with `package.json` on GitHub's `main` branch).
 - **src/browser**: Chrome session management: sign-in in a plain Chrome window without remote debugging, then reopening the same profile with a debugging port and attaching over the Chrome DevTools Protocol.
-- **src/flow**: Everything that knows the Flow page: running a job, downloading results, listing and downloading media already in a project; all DOM selectors live in `src/flow/selectors.ts`; self-test function.
+- **src/flow**: Everything that knows the Flow page: running a job, downloading results, creating, listing and deleting projects, listing and downloading media already in a project; all DOM selectors live in `src/flow/selectors.ts`; self-test function.
 - **src/i18n**: All user-facing strings, translated to English and Italian.
 
 ## Principles
 
-- **Single owner**: Only the service touches Chrome; no concurrent access. Jobs, the media list and the commands that read Flow (`doctor`, models, self-test, balance) take turns on the page; while a job has it, those commands answer without touching it.
+- **Single owner**: Only the service touches Chrome; no concurrent access. Jobs, the media list and the other commands that use Flow (`doctor`, models, self-test, balance, the project list and deletion) take turns on the page; while a job has it, those commands answer without touching it.
 - **Serial execution**: Jobs run one at a time in a queue. The download of a media already in Flow is a job too, and the media list waits for the running job.
 - **Fail early**: Settings and cost are verified before submitting to Flow, to avoid spending credits.
 - **Centralized selectors**: All Flow page DOM selectors are in `src/flow/selectors.ts`, with a self-test to catch breaking changes.
