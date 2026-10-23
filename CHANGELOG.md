@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- In a project with many media, a job could save an older result of the project instead of its own: Flow draws only part of the grid and draws other older results while the job waits, and the job took the first one it had not seen before. Now only the top of the grid counts, where Flow shows the newest results
 - When Flow's home shows "Error loading projects", FlowPilot reloads it instead of reading an empty grid, which made a job without a project create a new one, and fails with `projects_unavailable` if the error stays
 - Downloading an upscaled result works: Flow ignores a mouse click on the upscaled items of its quality menu, so the item is now selected from the keyboard. A quality Flow shows disabled is treated like one that needs a plan upgrade, instead of being picked and never arriving
 - A download counts only when the file is on disk and not empty; otherwise the job fails with `download_failed` instead of reporting a file that is not there

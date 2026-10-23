@@ -85,21 +85,27 @@ export function classifyFailure(text: string): { code: string; key: string } | u
 }
 
 async function readResults(page: Page, type: JobType): Promise<ResultItem[]> {
-  const imgs = await page.evaluate((): ImgInfo[] => {
+  // The position on the page reads the grid in the order it is shown.
+  const imgs = await page.evaluate((): (ImgInfo & { top: number; left: number })[] => {
     const tiles = [...document.querySelectorAll("flow-video-tile")];
     return [...document.querySelectorAll("img")].map((img) => {
       const tile = img.closest("flow-video-tile");
+      const rect = img.getBoundingClientRect();
       return {
         src: img.src,
         mediaId: img.getAttribute("data-media-id"),
         inVideoTile: tile !== null,
         inPromptBox: img.closest("flow-prompt-box") !== null,
         thumbnail: img.classList.contains("thumbnail") || /thumbnail/i.test(img.alt),
-        width: img.getBoundingClientRect().width,
+        width: rect.width,
         tileIndex: tile ? tiles.indexOf(tile) : -1,
+        top: rect.top,
+        left: rect.left,
       };
     });
   });
+  // Grid order, newest first: row by row, left to right.
+  imgs.sort((a, b) => Math.round(a.top) - Math.round(b.top) || a.left - b.left);
   const seen = new Set<string>();
   const items: ResultItem[] = [];
   for (const img of imgs) {
@@ -169,7 +175,11 @@ export async function snapshotResults(page: Page, type: JobType): Promise<Result
   };
 }
 
-/** Polls until `count` new results appear; throws on a failure banner or timeout. */
+/**
+ * Polls until the first `count` results of the grid are all new; throws on a failure banner or timeout. Only the top of
+ * the grid counts: Flow shows new results first, and in a large project it draws only part of the grid, so an older
+ * result it draws after the snapshot is not new.
+ */
 export async function waitForResults(
   page: Page,
   type: JobType,
@@ -179,8 +189,8 @@ export async function waitForResults(
 ): Promise<ResultItem[]> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const fresh = (await readResults(page, type)).filter((r) => !before.ids.has(r.id));
-    if (fresh.length >= count) return fresh.slice(0, count);
+    const top = (await readResults(page, type)).slice(0, count);
+    if (top.length === count && top.every((r) => !before.ids.has(r.id))) return top;
     const failure = await readFailure(page);
     if (failure && !before.failures.has(failure.code)) {
       throw new FlowPilotError(failure.code, failure.key);

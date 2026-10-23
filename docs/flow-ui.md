@@ -53,8 +53,11 @@ What a job needs on the project page:
    difference stops the job with `settings_not_applied` **before** anything is submitted.
 3. Read the cost and check it against your limits.
 4. Upload the references, type the prompt, submit.
-5. Wait for the results, matching each new result by its `data-media-id`, or for a video, which has none, by its
-   thumbnail address, so results from earlier jobs in the same project are never mistaken for this job's.
+5. Wait for the results at the top of the grid, where Flow shows the newest first: the job is done when the first
+   results, as many as it asked for, are all missing from what was on the page before submitting, matched by their
+   `data-media-id` or, for a video, which has none, by its thumbnail address. Only the top counts because in a large
+   project Flow draws just part of the grid and draws other older results later: they are new to the page, not to the
+   project. A grid sorted otherwise than newest first is not supported: the job ends with `generation_timeout`.
 6. Open each result in the viewer and download it from _Download media_ at the quality asked for, or by default at
    the best the plan offers (4K, else the 1080p/2K upscale, else the original), write a JSON summary next to it,
    record what was spent.
