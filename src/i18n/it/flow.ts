@@ -14,6 +14,10 @@ export default {
   "nav.projectNotFound": "Nessun progetto Flow corrisponde a {project}.",
   "nav.projectNotOpened": "Flow non ha aperto una pagina di progetto.",
   "nav.noProjects": "Flow non ha ancora nessun progetto.",
+  "nav.projectNotRenamed": "Flow non ha salvato il nome {name} per il nuovo progetto.",
+  "nav.projectNotDeleted": "Flow elenca ancora il progetto {name} dopo averlo eliminato.",
+  "nav.projectsUnavailable":
+    'Flow mostra "Error loading projects" nella home, anche dopo averla ricaricata. Riprova fra un minuto.',
   "models.settingsNotOpen": "Il popover delle impostazioni di Flow non si è aperto.",
   "models.menuNotOpen": "Il menu del modello di Flow non si è aperto.",
   "gen.settingsNotApplied": "Flow non ha applicato le impostazioni richieste: {details}.",

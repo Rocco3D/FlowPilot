@@ -34,6 +34,16 @@ export default {
   "models.description": "List the available models",
   "models.ratios": "ratios: {value}",
   "models.durations": "durations: {value}",
+  "projects.description": "List the Flow projects, most recent first",
+  "projects.empty": "Flow has no project yet.",
+  "deleteProject.description": "Delete a Flow project with all its media",
+  "deleteProject.projectArgument": "Exact name or id of the project",
+  "deleteProject.yesOption": "Delete without asking (required without a terminal)",
+  "deleteProject.ask":
+    'Delete the project "{name}" (id {id}) with all its media? It cannot be undone. [y/N] ',
+  "deleteProject.cancelled": "Nothing deleted.",
+  "deleteProject.done": 'Project "{name}" (id {id}) deleted.',
+  "deleteProject.confirmRequired": "Without a terminal to ask in, deleting a project needs --yes.",
   "credits.description": "Show credit usage and limits",
   "credits.month": "Spent this month: {value}",
   "credits.remaining": "Remaining this month: {value}",
@@ -54,6 +64,11 @@ export default {
   "generate.ingredientOption": "Paths of ingredient images",
   "generate.characterOption": "Character names",
   "generate.projectOption": "Flow project name",
+  "generate.newProjectOption":
+    "Run the job in a new Flow project, named as given or as Flow names it",
+  "generate.askProject": 'Continue the project "{name}" or start a new one? [C/n] ',
+  "generate.askProjectRecent": "Continue the most recent project or start a new one? [C/n] ",
+  "generate.askProjectName": "Name of the new project (Enter for the name Flow gives it): ",
   "generate.outOption": "Output directory",
   "generate.upscaleOption":
     "Download quality: original, 1080p (2K for images) or 4k; left out, the best your plan offers",

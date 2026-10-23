@@ -5,6 +5,7 @@ import type {
   JobStatus,
   MediaInfo,
   ModelInfo,
+  ProjectInfo,
   SelftestReport,
   SessionStatus,
 } from "../core/schemas.js";
@@ -28,6 +29,10 @@ export interface FlowDriver {
   selftest(): Promise<SelftestReport>;
   /** Lists the models available to the signed-in account. */
   listModels(): Promise<ModelInfo[]>;
+  /** Lists the projects on the Flow home, most recent first. */
+  listProjects(): Promise<ProjectInfo[]>;
+  /** Deletes a project, by id or exact name, and returns it. */
+  deleteProject(ref: string): Promise<ProjectInfo>;
   /** Lists the media of a project (by id or name; the most recent one when left out). */
   listMedia(
     project?: string,

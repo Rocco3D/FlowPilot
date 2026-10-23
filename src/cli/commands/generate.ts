@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import { Option, type Command } from "commander";
 import { FlowPilotError } from "../../core/errors.js";
 import type { Job, JobRequestInput, JobType } from "../../core/schemas.js";
@@ -19,6 +20,7 @@ interface GenerateOpts extends JsonOpt {
   ingredient?: string[];
   character?: string[];
   project?: string;
+  newProject?: true | string;
   out?: string;
   upscale?: "original" | "1080p" | "4k";
   maxCredits?: number;
@@ -69,11 +71,47 @@ function buildRequest(type: JobType, opts: GenerateOpts): JobRequestInput {
     ingredients: opts.ingredient?.map((p) => path.resolve(p)),
     characters: opts.character,
     project: opts.project,
+    newProject: opts.newProject,
     outDir: absolute(opts.out),
     upscale: opts.upscale,
     maxCredits: opts.maxCredits,
     confirm: opts.confirm,
   };
+}
+
+/**
+ * In a terminal, a job with neither --project nor --new-project asks whether to continue the most recent project or
+ * start a new one. Enter continues, as a script without a terminal does.
+ */
+async function askProject(
+  client: Awaited<ReturnType<typeof connect>>,
+  opts: GenerateOpts,
+): Promise<true | string | undefined> {
+  if (opts.project !== undefined || opts.newProject !== undefined) return undefined;
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return undefined;
+  let recent: string | undefined;
+  try {
+    const projects = await client.listProjects();
+    // With no project yet the job creates one anyway.
+    if (projects.length === 0) return undefined;
+    recent = projects[0]?.name;
+  } catch (error) {
+    // A running job holds the page: ask without the name.
+    if (!(error instanceof FlowPilotError) || error.code !== "job_running") throw error;
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(
+      recent === undefined
+        ? t("cli.generate.askProjectRecent")
+        : t("cli.generate.askProject", { name: recent }),
+    );
+    if (!/^n/i.test(answer.trim())) return undefined;
+    const name = (await rl.question(t("cli.generate.askProjectName"))).trim();
+    return name === "" ? true : name;
+  } finally {
+    rl.close();
+  }
 }
 
 async function waitForJob(
@@ -116,6 +154,7 @@ function register(program: Command, type: JobType, ctx: Ctx): void {
     .option("--ingredient <paths...>", t("cli.generate.ingredientOption"))
     .option("--character <names...>", t("cli.generate.characterOption"))
     .option("--project <name>", t("cli.generate.projectOption"))
+    .option("--new-project [name]", t("cli.generate.newProjectOption"))
     .option("--out <dir>", t("cli.generate.outOption"))
     .option("--upscale <resolution>", t("cli.generate.upscaleOption"))
     .option("--max-credits <n>", t("cli.generate.maxCreditsOption"), number)
@@ -126,6 +165,8 @@ function register(program: Command, type: JobType, ctx: Ctx): void {
     .action(async (opts: GenerateOpts, command: Command) => {
       const request = buildRequest(type, opts);
       const client = await connect(command);
+      const newProject = await askProject(client, opts);
+      if (newProject !== undefined) request.newProject = newProject;
       let job = await client.createJob(request);
       if (!opts.wait) {
         show(opts, job, () => t("cli.generate.queued", { id: job.id }));

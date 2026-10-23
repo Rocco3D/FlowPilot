@@ -26,6 +26,7 @@ import { listMedia } from "./media.js";
 import {
   type ProjectRef,
   createProject,
+  deleteProject,
   isSignedIn,
   listProjects,
   openHome,
@@ -204,6 +205,22 @@ export class RealFlowDriver implements FlowDriver {
     return this.lastBalance;
   }
 
+  /** The projects on the Flow home, most recent first. */
+  async listProjects(): Promise<ProjectRef[]> {
+    if (this.running) throw this.busy();
+    return this.onPage(async () => {
+      const page = await this.session.page();
+      await openHome(page);
+      return listProjects(page);
+    });
+  }
+
+  /** Deletes a project, by id or exact name. */
+  async deleteProject(ref: string): Promise<ProjectRef> {
+    if (this.running) throw this.busy();
+    return this.onPage(async () => deleteProject(await this.session.page(), ref));
+  }
+
   listMedia(project?: string): Promise<{ project: ProjectRef; media: MediaInfo[] }> {
     return this.asJob(async () => {
       const page = await this.session.page();
@@ -236,7 +253,7 @@ export class RealFlowDriver implements FlowDriver {
     assertFilesExist(references);
     const config = loadConfig();
     const page = await this.session.page();
-    await this.openProjectFor(page, request.project);
+    await this.openProjectFor(page, request.project, request.newProject);
     await ensureClassicComposer(page);
     await clearComposer(page);
 
@@ -321,8 +338,17 @@ export class RealFlowDriver implements FlowDriver {
     return openProject(page, first.id);
   }
 
-  /** Opens the named project, else the most recent one, else a new one. */
-  private async openProjectFor(page: Page, project: string | undefined): Promise<void> {
+  /** Opens a new project when asked, else the named project, else the most recent one, else a new one. */
+  private async openProjectFor(
+    page: Page,
+    project: string | undefined,
+    newProject?: true | string,
+  ): Promise<void> {
+    if (newProject !== undefined) {
+      await openHome(page);
+      await createProject(page, newProject === true ? undefined : newProject);
+      return;
+    }
     if (project) {
       await openProject(page, project);
       return;

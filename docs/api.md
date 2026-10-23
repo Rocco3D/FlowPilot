@@ -49,8 +49,8 @@ All responses are JSON. Error responses use this format:
 - **400**: Bad request (bad_request, config errors)
 - **401**: Unauthorized (missing or invalid token)
 - **403**: Forbidden (bad_host: the `Host` header does not match the service address)
-- **404**: Not found (job_not_found, not_found)
-- **409**: Conflict (job_not_cancellable, job_running)
+- **404**: Not found (job_not_found, not_found, project_not_found)
+- **409**: Conflict (job_not_cancellable, job_running, project_ambiguous)
 - **413**: Payload too large (body over 1 MB)
 - **500**: Server error (any other error code, e.g. chrome_not_found, internal)
 
@@ -228,7 +228,8 @@ Provide a JSON object with the following fields (from `JobRequest`):
 - `endFrame` (string, optional): Path to an ending frame image
 - `ingredients` (array of strings, optional): Reference images or media
 - `characters` (array of strings, optional): Reference characters
-- `project` (string, optional): Project identifier
+- `project` (string, optional): Name or id of an existing project, as listed by `GET /projects`. With neither `project` nor `newProject`, the job runs in the most recent project, or in a new one when the account has none
+- `newProject` (`true` or string, optional): Runs the job in a new project: `true` keeps the name Flow gives it (the date and time), a string names it. Not together with `project`: the request fails with HTTP 400. If Flow does not save the name, the job fails with `project_not_renamed`
 - `outDir` (string, optional): Output directory path. Defaults to the configured output folder.
 - `upscale` (string, optional): Download quality: "original", "1080p" (the 2K upscale for images) or "4k". Left out, the best quality the user's Flow plan offers: 4K when the plan has it, else the 1080p/2K upscale, otherwise the original. A quality asked for is the only one tried: if Flow does not offer it, shows it disabled, or offers it only after a plan upgrade, the job fails with `download_tier_locked` or `upscale_unavailable` instead of downloading another quality
 - `maxCredits` (integer, optional): Per-job credit limit for this job; it can only lower `maxCreditsPerJob`, never raise it (raise it with `confirm`)
@@ -402,6 +403,54 @@ Retrieves the result file bytes for a specific output in a job.
 **Response:**
 
 Raw file bytes with appropriate `Content-Type` header (e.g., `image/png`, `video/mp4`).
+
+### GET /projects
+
+Lists the Flow projects, most recent first: the order of Flow's project grid, which is by creation, not by last use. The
+first one is where a job without `project` or `newProject` runs. While a job is using the Flow page, the request fails
+with HTTP 409 and `job_running`.
+
+**Response:**
+
+```json
+[
+  { "id": "9fcb00a0-a732-4a37-9bd5-4e0a66bd1fc5", "name": "My project" },
+  { "id": "a89ad790-6b93-40e3-8227-fca5bb13ef29", "name": "Oct 22 - 17:50" }
+]
+```
+
+If Flow's home shows "Error loading projects" even after FlowPilot reloads it twice, the request fails with
+`projects_unavailable` (HTTP 500): try again in a minute.
+
+### DELETE /projects/:project
+
+Deletes a Flow project with all its media. It cannot be undone.
+
+**Path parameters:**
+
+- `project` (string): The project's exact name (case aside) or its id. A partial name never matches (`project_not_found`,
+  HTTP 404), and a name two projects share fails with `project_ambiguous` (HTTP 409), whose message lists their ids.
+
+**Request Body:**
+
+- `confirm` (boolean, required): Must be `true`; without it the request fails with HTTP 400 and deletes nothing.
+
+FlowPilot clicks _Delete project_ on the project's card in Flow's home, confirms Flow's dialog, and waits for the card to
+leave the page. If it stays, the request fails with `project_not_deleted`. While a job is using the Flow page, the
+request fails with HTTP 409 and `job_running`.
+
+**Response (200):** the deleted project.
+
+```json
+{ "id": "91c79037-7a77-4bfd-b0dd-c5aa13f17dd5", "name": "My project" }
+```
+
+**curl Example:**
+
+```bash
+TOKEN=$(cat ~/.config/flowpilot/token)
+curl -X DELETE "http://127.0.0.1:47820/projects/My%20project"   -H "Authorization: Bearer $TOKEN"   -H "Content-Type: application/json"   -d '{ "confirm": true }'
+```
 
 ### GET /media
 

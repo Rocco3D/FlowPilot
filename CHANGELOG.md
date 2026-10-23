@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A job can start a new Flow project, named or with the name Flow gives it: `--new-project [name]` on the command line, `newProject` in the HTTP API and the MCP server. In a terminal, a job with neither `--project` nor `--new-project` asks whether to continue the most recent project or start a new one; without a terminal it continues the most recent one, as before. The MCP tools tell the assistant to ask the user
+- The Flow projects can be listed, most recent first: `flowpilot projects`, `GET /projects`, `list_projects`
+- A Flow project can be deleted, by its exact name or its id: `flowpilot delete-project`, `DELETE /projects/:project`, `delete_project`. It always asks for confirmation: the CLI asks in the terminal (`--yes` without one), the HTTP API wants `confirm: true`, the MCP tool tells the assistant to ask the user
 - Media already in a Flow project can be listed and downloaded again without generating anything or spending credits: `GET /media` and `POST /media/download` in the HTTP API, `list_media` and `download_media` in the MCP server. The download is a job in the queue; the list waits for a running job and says so (`queued`). The file is saved as `<project>-media-<id>`
 - An image job that fails after Flow already generated its media lists their ids in the error, so they can be downloaded instead of generated again
 - `upscale` accepts `original`, to ask for the file as generated
@@ -20,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- When Flow's home shows "Error loading projects", FlowPilot reloads it instead of reading an empty grid, which made a job without a project create a new one, and fails with `projects_unavailable` if the error stays
 - Downloading an upscaled result works: Flow ignores a mouse click on the upscaled items of its quality menu, so the item is now selected from the keyboard. A quality Flow shows disabled is treated like one that needs a plan upgrade, instead of being picked and never arriving
 - A download counts only when the file is on disk and not empty; otherwise the job fails with `download_failed` instead of reporting a file that is not there
 - A project asked for by its exact name is found: the name read from Flow's project card included the text of the card's edit and delete icons, so only a partial match could work

@@ -86,6 +86,8 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
 
 const STATUS_BY_CODE: Record<string, number> = {
   not_found: 404,
+  project_not_found: 404,
+  project_ambiguous: 409,
   job_not_found: 404,
   job_not_cancellable: 409,
   job_running: 409,
@@ -163,6 +165,9 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (is("POST", 1, "jobs")) {
       const raw = (await readJson(req)) as { outputs?: number };
       const body = JobRequest.parse(raw);
+      if (body.project !== undefined && body.newProject !== undefined) {
+        throw badRequest(t("server.http.projectAndNewProject"));
+      }
       const cfg = loadConfig(deps.configDir);
       const configured = body.type === "video" ? cfg.defaultVideoModel : cfg.defaultImageModel;
       // What the request leaves out comes from the configuration; `raw` is read too because the schema has already
@@ -184,6 +189,13 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (is("GET", 2, "jobs")) return send(res, 200, requireJob(b!));
     if (is("DELETE", 2, "jobs")) return send(res, 200, queue.cancel(b!));
     if (is("GET", 4, "jobs") && c === "files") return sendFile(res, b!, d!);
+    if (is("GET", 1, "projects")) return send(res, 200, await driver.listProjects());
+    if (is("DELETE", 2, "projects")) {
+      // Deleting cannot be undone: the caller must say it is sure.
+      const body = (await readJson(req)) as { confirm?: unknown } | null;
+      if (body?.confirm !== true) throw badRequest(t("server.http.confirmRequired"));
+      return send(res, 200, await driver.deleteProject(b!));
+    }
     if (is("GET", 1, "media")) {
       // The list drives the Flow page, so it waits for a running job and says so.
       const project = url.searchParams.get("project") ?? undefined;

@@ -10,6 +10,7 @@ import type {
   MediaDownloadRequest,
   MediaList,
   ModelInfo,
+  ProjectInfo,
   SelftestReport,
   SessionStatus,
 } from "../core/schemas.js";
@@ -121,6 +122,14 @@ export class Client {
   listJobs = () => this.json<Job[]>("GET", "/jobs");
   getJob = (id: string) => this.json<Job>("GET", `/jobs/${encodeURIComponent(id)}`);
   cancelJob = (id: string) => this.json<Job>("DELETE", `/jobs/${encodeURIComponent(id)}`);
+  listProjects = () => this.json<ProjectInfo[]>("GET", "/projects", undefined, this.longTimeoutMs);
+  deleteProject = (ref: string) =>
+    this.json<ProjectInfo>(
+      "DELETE",
+      `/projects/${encodeURIComponent(ref)}`,
+      { confirm: true },
+      this.longTimeoutMs,
+    );
   listMedia = (project?: string) =>
     this.json<MediaList>(
       "GET",

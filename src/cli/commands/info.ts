@@ -1,5 +1,7 @@
 import type { Command } from "commander";
+import { createInterface } from "node:readline/promises";
 import { FlowPilotError } from "../../core/errors.js";
+import { pickProject } from "../../core/projects.js";
 import type { SelftestReport } from "../../core/schemas.js";
 import { getLocale, t } from "../../i18n/index.js";
 import { connect, show, type JsonOpt } from "../context.js";
@@ -59,6 +61,46 @@ export function registerInfo(program: Command): void {
           )
           .join("\n"),
       );
+    });
+
+  program
+    .command("projects")
+    .description(t("cli.projects.description"))
+    .option("--json", t("cli.jsonOption"))
+    .action(async (opts: JsonOpt, cmd: Command) => {
+      const projects = await (await connect(cmd)).listProjects();
+      show(opts, projects, () =>
+        projects.length
+          ? projects.map((p) => [p.id, p.name].join("  ")).join("\n")
+          : t("cli.projects.empty"),
+      );
+    });
+
+  program
+    .command("delete-project")
+    .description(t("cli.deleteProject.description"))
+    .argument("<project>", t("cli.deleteProject.projectArgument"))
+    .option("--yes", t("cli.deleteProject.yesOption"))
+    .option("--json", t("cli.jsonOption"))
+    .action(async (ref: string, opts: JsonOpt & { yes?: boolean }, cmd: Command) => {
+      const client = await connect(cmd);
+      // Resolved here first, so the question names the very project that will be deleted.
+      const target = pickProject(await client.listProjects(), ref);
+      if (!opts.yes) {
+        if (!process.stdin.isTTY || !process.stdout.isTTY) {
+          throw new FlowPilotError("confirm_required", "cli.deleteProject.confirmRequired");
+        }
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+        const answer = await rl
+          .question(t("cli.deleteProject.ask", target))
+          .finally(() => rl.close());
+        if (!/^(s|si|sì|y|yes)$/i.test(answer.trim())) {
+          console.log(t("cli.deleteProject.cancelled"));
+          return;
+        }
+      }
+      const deleted = await client.deleteProject(target.id);
+      show(opts, deleted, () => t("cli.deleteProject.done", deleted));
     });
 
   program

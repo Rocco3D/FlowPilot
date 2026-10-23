@@ -6,4 +6,6 @@ export default {
   "http.badJson": "Request body is not valid JSON",
   "http.bodyTooLarge": "Request body is too large (limit 1 MB)",
   "http.valueRequired": 'Request body must be {"value": string}',
+  "http.projectAndNewProject": "Use only one of project and newProject",
+  "http.confirmRequired": 'Deleting cannot be undone: send {"confirm": true}',
 } as const;

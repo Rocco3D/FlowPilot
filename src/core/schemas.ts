@@ -20,6 +20,8 @@ export const JobRequest = z.object({
   ingredients: z.array(z.string()).optional(),
   characters: z.array(z.string()).optional(),
   project: z.string().optional(),
+  /** Runs the job in a new project: `true` keeps the name Flow gives it, a string names it. Not with `project`. */
+  newProject: z.union([z.literal(true), z.string().min(1)]).optional(),
   outDir: z.string().optional(),
   upscale: Upscale.optional(),
   maxCredits: z.number().int().min(0).optional(),
@@ -93,6 +95,9 @@ export const Job = z.object({
   error: JobError.optional(),
 });
 export type Job = z.infer<typeof Job>;
+
+export const ProjectInfo = z.object({ id: z.string(), name: z.string() });
+export type ProjectInfo = z.infer<typeof ProjectInfo>;
 
 export const MediaInfo = z.object({
   id: z.string(),

@@ -7,8 +7,14 @@ person would. This is what it touches, what it assumes about it, and what to che
 
 - **Home** (`https://flow.google.com/?hl=en`): where the sign-in state is read from. Signed in means the _New project_
   button or the prompt box is visible, not signed in means the _Sign in_ button is.
-- **Project grid**: projects are found by their `/project/<uuid>` links; a job without `--project` opens the first
-  project on the grid, in Flow's own order, or creates one when the grid is empty.
+- **Project grid**: projects are found by their `/project/<uuid>` links, in Flow's order, which is by creation, not by
+  last use. A job without a project opens the first project on the grid, or creates one when the grid is empty. A job
+  with a new project clicks _New project_ and, when a name is given, types it in the project title. When the home shows
+  _Error loading projects_, FlowPilot reloads it, at most twice, instead of reading an empty grid; Flow shows that
+  message when the home is reloaded right after a deletion.
+- **Deleting a project**: _Delete project_ on the project's card, then _Delete project_ in Flow's confirmation dialog
+  ("Are you sure you want to delete this project?"). Flow drops the card from the open home, which FlowPilot waits for
+  without reloading the page.
 - **Project page** (the composer): where a job runs.
 - **Media viewer** (`/project/<project>/edit/<id>`): one media of the project, opened by clicking it or straight from
   its address. It has a _Download media_ button, a rail with the thumbnails of the media around the one open, and controls
@@ -26,6 +32,7 @@ What a job needs on the project page:
 
 | Element                                                                                                 | Used for                                                                    |
 | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Project title field (`Editable text`)                                                                   | Naming a new project; Flow then shows the name in the tab title             |
 | Prompt box                                                                                              | Clearing the composer, typing the prompt                                    |
 | Submit button                                                                                           | Starting the generation, and waiting for it to become available again       |
 | Settings trigger                                                                                        | The summary line of the current settings (`Video · 720p · 8s crop_16_9 x1`) |

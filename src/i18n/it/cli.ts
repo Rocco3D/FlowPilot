@@ -35,6 +35,17 @@ export default {
   "models.description": "Elenca i modelli disponibili",
   "models.ratios": "proporzioni: {value}",
   "models.durations": "durate: {value}",
+  "projects.description": "Elenca i progetti Flow, dal più recente",
+  "projects.empty": "Flow non ha ancora nessun progetto.",
+  "deleteProject.description": "Elimina un progetto Flow con tutti i suoi media",
+  "deleteProject.projectArgument": "Nome esatto o id del progetto",
+  "deleteProject.yesOption": "Elimina senza chiedere (necessario senza terminale)",
+  "deleteProject.ask":
+    'Elimino il progetto "{name}" (id {id}) con tutti i suoi media? Non si può annullare. [s/N] ',
+  "deleteProject.cancelled": "Nessun progetto eliminato.",
+  "deleteProject.done": 'Progetto "{name}" (id {id}) eliminato.',
+  "deleteProject.confirmRequired":
+    "Senza un terminale in cui chiedere, per eliminare un progetto serve --yes.",
   "credits.description": "Mostra l'uso e i limiti dei crediti",
   "credits.month": "Speso questo mese: {value}",
   "credits.remaining": "Rimanente questo mese: {value}",
@@ -55,6 +66,11 @@ export default {
   "generate.ingredientOption": "Percorsi delle immagini degli ingredienti",
   "generate.characterOption": "Nomi dei personaggi",
   "generate.projectOption": "Nome del progetto Flow",
+  "generate.newProjectOption":
+    "Esegui il job in un nuovo progetto Flow, con il nome indicato o quello che dà Flow",
+  "generate.askProject": 'Continuo il progetto "{name}" o ne creo uno nuovo? [C/n] ',
+  "generate.askProjectRecent": "Continuo il progetto più recente o ne creo uno nuovo? [C/n] ",
+  "generate.askProjectName": "Nome del nuovo progetto (Invio per il nome che dà Flow): ",
   "generate.outOption": "Cartella di output",
   "generate.upscaleOption":
     "Qualità del download: original, 1080p (2K per le immagini) o 4k; se non indicata, la migliore che il tuo piano offre",

@@ -1,7 +1,15 @@
 import type { Page } from "playwright-core";
 import { FlowPilotError } from "../core/errors.js";
 import { clickRobust } from "./overlays.js";
-import { HOME_URL, PROJECT_LINK_CSS, PROJECT_PATH_RE, selectors } from "./selectors.js";
+import { pickProject } from "../core/projects.js";
+import {
+  HOME_URL,
+  PROJECT_LINK_CSS,
+  PROJECT_PATH_RE,
+  projectDeleteButton,
+  projectDeleteConfirm,
+  selectors,
+} from "./selectors.js";
 
 export interface ProjectRef {
   id: string;
@@ -51,10 +59,25 @@ export async function isSignedIn(page: Page): Promise<boolean> {
 
 async function readCards(page: Page): Promise<ProjectCard[]> {
   const links = selectors.projectLinks.locate(page);
-  await links
-    .first()
-    .waitFor({ state: "visible", timeout: 15000 })
-    .catch(() => undefined);
+  const failed = selectors.projectsError.locate(page);
+  // Flow sometimes fails to load the grid, for example right after a deletion: an empty grid then means nothing.
+  for (let attempt = 0; ; attempt += 1) {
+    await links
+      .first()
+      .or(failed.first())
+      .waitFor({ state: "visible", timeout: 15000 })
+      .catch(() => undefined);
+    if (
+      !(await failed
+        .first()
+        .isVisible()
+        .catch(() => false))
+    )
+      break;
+    if (attempt === 2)
+      throw new FlowPilotError("projects_unavailable", "flow.nav.projectsUnavailable");
+    await openHome(page);
+  }
   await selectors.loadingIndicator
     .locate(page)
     .first()
@@ -94,6 +117,38 @@ export async function listProjects(page: Page): Promise<ProjectRef[]> {
   return (await readCards(page)).map(({ id, name }) => ({ id, name }));
 }
 
+/**
+ * Deletes the project `ref` names (its id or exact name) from the home, confirming Flow's dialog, and checks that its
+ * card left the page.
+ */
+export async function deleteProject(page: Page, ref: string): Promise<ProjectRef> {
+  // The CLI has just listed the projects: a home already open is not loaded again.
+  if (
+    new URL(page.url()).pathname !== "/" ||
+    !/flow\.google\.com$/.test(new URL(page.url()).hostname)
+  ) {
+    await openHome(page);
+  }
+  const target = pickProject(await listProjects(page), ref);
+  await clickRobust(projectDeleteButton(page, target.id));
+  await clickRobust(projectDeleteConfirm(page));
+  // Flow drops the card from the open home; reloading it right away makes Flow fail to load the grid.
+  const gone = await page
+    .locator(`a[href*="/project/${target.id}"]`)
+    .first()
+    .waitFor({ state: "hidden", timeout: 15000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  if (!gone) {
+    throw new FlowPilotError("project_not_deleted", "flow.nav.projectNotDeleted", {
+      name: target.name,
+    });
+  }
+  return target;
+}
+
 async function waitForProject(page: Page): Promise<string> {
   await page.waitForURL(PROJECT_PATH_RE, { timeout: 20000 }).catch(() => undefined);
   await selectors.promptBox
@@ -124,8 +179,25 @@ export async function openProject(page: Page, nameOrId: string): Promise<Project
   return { id: await waitForProject(page), name: card.name };
 }
 
-/** Creates a project from the home page and returns its id. */
-export async function createProject(page: Page): Promise<string> {
+/** Creates a project from the home page and returns its id; with `name`, renames it from Flow's default. */
+export async function createProject(page: Page, name?: string): Promise<string> {
   await clickRobust(selectors.newProjectButton.locate(page));
-  return waitForProject(page);
+  const id = await waitForProject(page);
+  if (name !== undefined) {
+    const title = selectors.projectTitle.locate(page).first();
+    await title.fill(name);
+    await title.press("Enter");
+    // Flow puts the saved name in the tab title.
+    const saved = await page
+      .waitForFunction((wanted) => document.title.endsWith(` - ${wanted}`), name, {
+        timeout: 10000,
+      })
+      .then(
+        () => true,
+        () => false,
+      );
+    if (!saved)
+      throw new FlowPilotError("project_not_renamed", "flow.nav.projectNotRenamed", { name });
+  }
+  return id;
 }

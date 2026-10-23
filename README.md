@@ -87,6 +87,35 @@ flowpilot video --prompt-file prompt.md --model "Veo 3.1 - Lite"
 flowpilot video --prompt "A flowing waterfall" --model "Omni 1.1 Flash" --resolution 720p --duration 4
 ```
 
+### Projects
+
+A job runs in a Flow project. In a terminal, a job with neither `--project` nor `--new-project` asks whether to
+continue the most recent project or start a new one, and Enter continues. Without a terminal (a script, the HTTP API)
+it continues the most recent project.
+
+- `--project "My project"`: Continue an existing project, by name or id
+- `--new-project "My project"`: Start a new project with this name; `--new-project` alone keeps the name Flow gives it
+  (the date and time)
+
+The most recent project is the first on Flow's project grid, which Flow orders by creation, not by last use. List the
+projects, most recent first:
+
+```bash
+flowpilot projects
+```
+
+While a job is running the list fails with `job_running`: try again when the job ends.
+
+Delete a project with all its media. It cannot be undone:
+
+```bash
+flowpilot delete-project "My project"
+```
+
+The project is named by its exact name or its id: a partial name never matches, and when two projects have the same
+name FlowPilot refuses and shows their ids. In a terminal it asks for confirmation, naming the project and its id;
+without a terminal it needs `--yes`.
+
 ### Advanced options
 
 - `--ratio 16:9`: Aspect ratio (image and video; default is model-dependent)

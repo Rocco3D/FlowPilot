@@ -24,6 +24,10 @@ const COSTS =
   "Images with Nano Banana models cost 0 credits on the owner's plan.";
 const CONFIRM =
   "Always confirm with the user before generating a video, because it spends credits.";
+const PROJECT =
+  "Before the first generation of a conversation, ask the user whether to continue an existing Flow project " +
+  "(list_projects) or start a new one, then pass `project` (a name or id) or `newProject` (true, or the name to " +
+  "give it); with neither, the job runs in the most recent project.";
 const WAIT =
   `wait (default true) polls until the job finishes, for at most ${MAX_WAIT_MS / 1000} seconds, and returns the ` +
   "result file paths; if the job is still running it returns { still_running: true, id, status } with no error, " +
@@ -144,7 +148,7 @@ export function createMcpServer(
 
   tool(
     "generate_video",
-    `Generate a video with Google Flow. ${COSTS} ${CONFIRM} ${WAIT}`,
+    `Generate a video with Google Flow. ${COSTS} ${CONFIRM} ${PROJECT} ${WAIT}`,
     generateShape,
     async ({ wait, ...req }) =>
       finish(await client.createJob(JobRequest.parse({ ...req, type: "video" })), wait),
@@ -152,10 +156,27 @@ export function createMcpServer(
 
   tool(
     "generate_image",
-    `Generate an image with Google Flow. ${COSTS} ${WAIT}`,
+    `Generate an image with Google Flow. ${COSTS} ${PROJECT} ${WAIT}`,
     generateShape,
     async ({ wait, ...req }) =>
       finish(await client.createJob(JobRequest.parse({ ...req, type: "image" })), wait),
+  );
+
+  toolNoArgs(
+    "list_projects",
+    "List the Google Flow projects, most recent first, with id and name, so the user can choose which one to " +
+      "continue. It spends no credits. While a job is running it fails with job_running.",
+    () => client.listProjects(),
+  );
+
+  tool(
+    "delete_project",
+    "Permanently delete a Google Flow project with all its media: it cannot be undone. `project` is the exact name " +
+      "or the id from list_projects; a partial name never matches, and a name two projects share is refused with " +
+      "their ids. Always ask the user to confirm first, naming the project and its id, and call it only after a " +
+      "clear yes. While a job is running it fails with job_running.",
+    { project: z.string() },
+    ({ project }) => client.deleteProject(project),
   );
 
   tool(

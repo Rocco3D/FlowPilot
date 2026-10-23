@@ -5,6 +5,7 @@ import type {
   JobStatus,
   MediaInfo,
   ModelInfo,
+  ProjectInfo,
   SelftestReport,
   SessionStatus,
 } from "../../src/core/schemas.js";
@@ -55,6 +56,14 @@ export class FakeDriver implements FlowDriver {
 
   listModels(): Promise<ModelInfo[]> {
     return Promise.resolve(MODELS);
+  }
+
+  listProjects(): Promise<ProjectInfo[]> {
+    return Promise.resolve([{ id: "fake-project", name: "Fake project" }]);
+  }
+
+  deleteProject(ref: string): Promise<ProjectInfo> {
+    return Promise.resolve({ id: "fake-project", name: ref });
   }
 
   listMedia(

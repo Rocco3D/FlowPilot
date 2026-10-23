@@ -1,6 +1,7 @@
 export default {
   "error.internal": "Errore interno",
   "jobs.notFound": "Job non trovato: {id}",
+  "projects.ambiguous": "Più di un progetto si chiama {name}: usa il suo id ({ids}).",
   "queue.notCancellable": "Il job {id} non può essere annullato perché è {status}",
   "queue.modelReplaced":
     "Il modello configurato {from} non è più offerto da Flow, quindi questo job ha usato {to}.",

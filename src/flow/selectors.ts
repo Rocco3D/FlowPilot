@@ -89,6 +89,10 @@ export const selectors = {
     describe: 'Home button "New project"',
     locate: (page) => page.getByRole("button", { name: /new project/i }),
   },
+  projectTitle: {
+    describe: 'Project page title field (input "Editable text")',
+    locate: (page) => page.locator('input[aria-label="Editable text"]'),
+  },
   signInButton: {
     describe: 'Google "Sign in" button or link',
     locate: (page) =>
@@ -128,6 +132,10 @@ export const selectors = {
     describe: 'Agent panel header button "Close"',
     locate: (page) =>
       page.locator("flow-agent-panel").getByRole("button", { name: "Close", exact: true }),
+  },
+  projectsError: {
+    describe: 'Home message "Error loading projects"',
+    locate: (page) => page.getByText(/error loading projects/i),
   },
   loadingIndicator: {
     describe: "Any progressbar (page or card loading)",
@@ -346,3 +354,16 @@ export const assetForFile = (page: Page, basename: string) =>
   dialogOf(page).getByRole("option", {
     name: new RegExp(`^${basename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
   });
+/** "Delete project" button on the home card of the project with this id. */
+export const projectDeleteButton = (page: Page, id: string) =>
+  page
+    .locator("*", { has: page.locator(`a[href*="/project/${id}"]`) })
+    .filter({ has: page.getByRole("button", { name: /delete project/i }) })
+    .last()
+    .getByRole("button", { name: /delete project/i });
+/** "Delete project" button of the dialog that asks to confirm the deletion. */
+export const projectDeleteConfirm = (page: Page) =>
+  page
+    .getByRole("dialog")
+    .filter({ hasText: /delete this project/i })
+    .getByRole("button", { name: /^delete project$/i });
