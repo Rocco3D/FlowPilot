@@ -32,7 +32,7 @@ A finished job reports `modelUsed`, the model it really ran with. It differs fro
 
 In `get_config`, a default model or a language that is not set comes back as `null`, not missing: "not set" is what makes a job use the model already selected in Flow, and an assistant has to be able to tell it from a setting that does not exist.
 
-A generation that fails after finding its results in Flow (for example while downloading them) reports their ids in the error message for an image job (a video tile in Flow carries no id): `download_media` gets them back without spending credits again. Otherwise `list_media` finds them.
+A generation that fails after finding its results in Flow (for example while downloading them) reports their ids in the error message for an image job (a video tile in Flow carries no id): `download_media` gets them back without generating them again. Otherwise `list_media` finds them.
 
 `list_media` opens each media in Flow's viewer to read its id, about two seconds per media, and waits for a running job first. Behind a long video the assistant's client may stop waiting before the list arrives; asking again works. An image also has a second id, the one the error of a failed job lists: `download_media` accepts both.
 
