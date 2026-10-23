@@ -517,9 +517,9 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ### POST /media/download
 
-Queues the download of a media already in a Flow project, as a job. It generates nothing and spends no credits: it is
+Queues the download of a media already in a Flow project, as a job. It generates nothing: it is
 the way to get a result back without generating it again, for example after a job that failed once Flow had already
-generated (an image job that fails after finding its results in Flow (for example while downloading them) lists their ids in its error).
+generated (an image job that fails after finding its results in Flow (for example while downloading them) lists their ids in its error). On Google AI Pro the download costs no credits, upscale included (measured October 2026); other plans have not been checked.
 
 **Request Body:**
 

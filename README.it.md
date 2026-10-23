@@ -228,9 +228,10 @@ Un job già in esecuzione o in download non si può annullare: il comando fallis
 ### Media già in Flow
 
 Le immagini e i video già presenti in un progetto Flow, da un job precedente, da un altro strumento o da un caricamento,
-si possono elencare e scaricare di nuovo senza generare niente e senza spendere crediti, dall'[API HTTP](docs/api.md)
+si possono elencare e scaricare di nuovo senza generare niente, dall'[API HTTP](docs/api.md)
 (`GET /media`, `POST /media/download`) o dal [server MCP](docs/mcp.md) (`list_media`, `download_media`). Non c'è un
-comando della CLI. Il file viene salvato come `<progetto>-media-<id>`.
+comando della CLI. Il file viene salvato come `<progetto>-media-<id>`. Con Google AI Pro il download non costa crediti,
+upscale compreso (misurato a ottobre 2026); gli altri piani non sono stati verificati.
 
 ### Arresto del servizio
 

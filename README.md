@@ -227,9 +227,9 @@ A job that is already running or downloading cannot be cancelled: the command fa
 ### Media already in Flow
 
 Images and videos already in a Flow project, from an earlier job, another tool or an upload, can be listed and
-downloaded again without generating anything or spending credits, through the [HTTP API](docs/api.md) (`GET /media`,
+downloaded again without generating anything, through the [HTTP API](docs/api.md) (`GET /media`,
 `POST /media/download`) or the [MCP server](docs/mcp.md) (`list_media`, `download_media`). There is no CLI command for
-it. The file is saved as `<project>-media-<id>`.
+it. The file is saved as `<project>-media-<id>`. On Google AI Pro the download costs no credits, upscale included (measured October 2026); other plans have not been checked.
 
 ### Service shutdown
 

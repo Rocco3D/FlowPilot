@@ -48,7 +48,7 @@ Flow waits for it to finish; for `doctor` that is about half a minute the first 
 A job downloads the results it produced, which it finds at the top of the project's grid, where Flow shows the newest
 first. Anything else already in a Flow project, a video made yesterday or an image you uploaded, is reached through
 the HTTP API (`GET /media`, `POST /media/download`) or the MCP tools (`list_media`, `download_media`): the list gives
-each media's id, and the download fetches it without generating anything or spending credits. There is no CLI
+each media's id, and the download fetches it without generating anything. There is no CLI
 command for it.
 
 What to know:
@@ -68,8 +68,8 @@ yourself once you know why it failed.
 
 Without `upscale`, FlowPilot downloads the best quality your Flow plan offers: it reads Flow's download menu and
 takes 4K when the plan has it, else the 1080p/2K upscale, otherwise the original. An upscale that asks for a plan
-upgrade, or that Flow shows disabled, counts as missing. If your plan charges credits for an upscale, the download
-spends them: the credit limits apply to generating, not to downloading. `original` asks for the file as generated.
+upgrade, or that Flow shows disabled, counts as missing. `original` asks for the file as generated. Downloading costs no credits on Google AI Pro, the
+2K and 1080p upscales included (measured October 2026). Other plans have not been checked.
 
 What has been measured, on the owner's plan in October 2026 only: the 2K and 1080p upscales cost no credits, 4K is
 disabled, and Flow makes the upscale on request, so a download takes about 10 seconds longer for an image and up to a

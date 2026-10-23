@@ -191,7 +191,8 @@ export function createMcpServer(
   tool(
     "download_media",
     "Download an image or video already in a Google Flow project, by its id from list_media or from the error of a " +
-      "failed job. It generates nothing and spends no credits: use it instead of generating the same media again. " +
+      "failed job. It generates nothing: use it instead of generating the same media again. On Google AI Pro the " +
+      "download costs no credits, upscale included (measured October 2026); other plans have not been checked. " +
       '`upscale` is "original", "1080p" (2K for images) or "4k"; left out, the best the plan of the user offers: ' +
       "4K, else the 1080p/2K upscale, else the original. The file is saved " +
       `as <project>-media-<id>. ${WAIT}`,
