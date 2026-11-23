@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- A model Flow is about to retire is found by its name. Flow's model menu shows a note under it (`Leaving Dec 5`), which was read as part of the name: `--model "Omni 1.1 Flash"` failed with `option_not_available`, and the name `flowpilot models` listed instead failed with `settings_not_applied`. `models`, `doctor` and the successor of a configured default model now use the name without the note
+
 ## [0.1.5] - 2026-10-23
 
 ### Added
