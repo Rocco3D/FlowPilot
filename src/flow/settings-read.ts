@@ -1,7 +1,7 @@
 import type { Page } from "playwright-core";
 import { FlowPilotError } from "../core/errors.js";
 import { clickRobust } from "./overlays.js";
-import { CREDITS_RE, RATIO_ICON, selectors } from "./selectors.js";
+import { CREDITS_RE, MODEL_ITEM_CAPTION_CSS, RATIO_ICON, selectors } from "./selectors.js";
 
 export interface TriggerSettings {
   mode: "video" | "image";
@@ -49,11 +49,17 @@ export function parseCredits(text: string): number | undefined {
   return match ? Number(match[1]) : undefined;
 }
 
-/** Turns a menu item or dropdown text ("volume_up Veo 3.1 - Fast", "🍌 Nano Banana 2") into a model. */
-export function parseModelItem(text: string): MenuModel {
+/**
+ * Turns a menu item or dropdown text ("volume_up Veo 3.1 - Fast", "🍌 Nano Banana 2") into a model. `caption` is
+ * the item's note, e.g. "Leaving Dec 5": its text follows the name in the item, and is cut off.
+ */
+export function parseModelItem(text: string, caption = ""): MenuModel {
+  const note = caption.trim();
+  const at = note ? text.lastIndexOf(note) : -1;
+  const label = at >= 0 ? text.slice(0, at) + text.slice(at + note.length) : text;
   // Icon ligatures are glued to the name ("volume_upVeo 3.1"), so no word boundaries.
-  const audio = text.includes("volume_up");
-  const name = text
+  const audio = label.includes("volume_up");
+  const name = label
     .replace(/volume_up|volume_off|arrow_drop_down/g, "")
     .replace(/^[^\p{L}\p{N}]+/u, "")
     .replace(/\s+/g, " ")
@@ -103,6 +109,13 @@ export async function openModelMenu(page: Page): Promise<void> {
 
 /** Reads the items of the open model menu. */
 export async function readModelMenu(page: Page): Promise<MenuModel[]> {
-  const texts = await selectors.modelMenuItems.locate(page).allTextContents();
-  return texts.map(parseModelItem).filter((m) => m.name);
+  const items = await selectors.modelMenuItems.locate(page).evaluateAll(
+    (els, css) =>
+      els.map((el) => ({
+        text: el.textContent ?? "",
+        caption: [...el.querySelectorAll(css)].map((c) => c.textContent ?? "").join(" "),
+      })),
+    MODEL_ITEM_CAPTION_CSS,
+  );
+  return items.map((item) => parseModelItem(item.text, item.caption)).filter((m) => m.name);
 }

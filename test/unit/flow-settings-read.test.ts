@@ -70,6 +70,18 @@ describe("parseModelItem", () => {
     });
   });
 
+  it("cuts off the caption Flow shows after the name of a model it is retiring", () => {
+    // Text and caption as read from Flow's menu in November 2026.
+    expect(parseModelItem("Omni 1.1 Flash Leaving Dec 5 ", " Leaving Dec 5 ")).toEqual({
+      name: "Omni 1.1 Flash",
+      audio: false,
+    });
+    expect(parseModelItem("volume_upVeo 3.1 - FastLeaving Dec 5", "Leaving Dec 5")).toEqual({
+      name: "Veo 3.1 - Fast",
+      audio: true,
+    });
+  });
+
   it("strips the emoji of image models", () => {
     expect(parseModelItem("🍌 Nano Banana 2 arrow_drop_down")).toEqual({
       name: "Nano Banana 2",

@@ -132,6 +132,20 @@ async function setFramesMode(page: Page, on: boolean): Promise<void> {
   }
 }
 
+/**
+ * How the duration is set: by clicking its chip, or not at all for a model with a single length. Such a model shows
+ * no duration chips, only its length in the settings pill (`shown`); any other length fails, offering that one.
+ */
+export function durationStep(
+  wanted: number,
+  chips: string[],
+  shown: number | undefined,
+): "chip" | "fixed" {
+  if (chips.length > 0) return "chip";
+  if (shown === wanted) return "fixed";
+  throw optionNotAvailable("duration", `${wanted}s`, shown ? [`${shown}s`] : []);
+}
+
 /** Clicks `target` if it is present and enabled; otherwise throws `option_not_available`. */
 async function pick(
   page: Page,
@@ -274,7 +288,16 @@ export async function applySettings(
   if (request.duration) {
     const all = durationChips(page);
     const wanted = `${request.duration}s`;
-    await pick(page, "duration", wanted, exact(all, wanted), all);
+    const chips = await visibleTexts(all);
+    const shown = (await readSettingsTrigger(page)).durationSec;
+    let step: "chip" | "fixed";
+    try {
+      step = durationStep(request.duration, chips, shown);
+    } catch (error) {
+      await dismissOverlays(page).catch(() => undefined);
+      throw error;
+    }
+    if (step === "chip") await pick(page, "duration", wanted, exact(all, wanted), all);
   }
   await pick(
     page,

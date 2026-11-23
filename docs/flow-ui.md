@@ -66,6 +66,11 @@ asked for, so a request that silently ran with another model is a failure, not a
 
 ## What the page does that matters
 
+- **A model Flow is retiring** has a note under its name in the model menu (`Leaving Dec 5`), in its own element.
+  FlowPilot reads the name without it, the way the model dropdown shows it once the model is selected.
+- **A model with a single length**, such as `Veo 3.1 - Lite` (8 seconds), has no duration chips: its length shows only
+  in the settings trigger. A job that asks for that length goes ahead; any other length fails with
+  `option_not_available`, which names the one the model has.
 - **The quality menu ignores the mouse** on its upscaled items: a click does nothing. FlowPilot selects the item from
   the keyboard, which works for every item.
 - **A quality the plan does not include** is marked _Upgrade_, shown disabled, or missing. FlowPilot never picks it:

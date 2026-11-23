@@ -35,6 +35,8 @@ export const LEGACY_MEDIA_RE = /media\.getMediaUrlRedirect/;
 export const LEGACY_NAME_RE = /[?&]name=([0-9a-f-]+)/i;
 export const EDIT_PATH_RE = /\/edit\/([0-9a-f-]+)/i;
 export const GATED_TIER_RE = /upgrade/i;
+/** Note under a model menu item's name, e.g. "Leaving Dec 5"; it is not part of the name. */
+export const MODEL_ITEM_CAPTION_CSS = ".caption";
 
 /** Failure banner text -> error code and i18n key, checked in order. */
 export const FAILURE_PATTERNS: { code: string; key: string; re: RegExp }[] = [

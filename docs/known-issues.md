@@ -18,6 +18,10 @@ Flow does not offer model Nano Banana 2 with the current settings. Available: Na
 `flowpilot models` prints the list Flow offers (read again after an hour), and is the fastest way to find a name to put in the
 configuration.
 
+A model Flow is about to retire shows a note under its name in the menu, such as `Leaving Dec 5`. The note is not part
+of the name: `flowpilot models` lists the model as `Omni 1.1 Flash`, and `--model "Omni 1.1 Flash"` keeps working until
+Flow removes it.
+
 There is one automatic case. When the model a job uses is the one configured as default (`defaultVideoModel` or
 `defaultImageModel`) and Flow offers the **next version of the same name**, FlowPilot uses that one, says so on the
 job result (`note`), updates the configuration once (unless it was changed while the job ran or could not be

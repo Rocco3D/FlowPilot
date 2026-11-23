@@ -17,7 +17,7 @@ import {
   classifyResultImg,
   resultId,
 } from "../../src/flow/results.js";
-import { diffSettings, optionNotAvailable } from "../../src/flow/settings-apply.js";
+import { diffSettings, durationStep, optionNotAvailable } from "../../src/flow/settings-apply.js";
 import { setLocale } from "../../src/i18n/index.js";
 
 describe("classifyResultImg", () => {
@@ -280,5 +280,30 @@ describe("optionNotAvailable", () => {
 
   it("says so when nothing is offered", () => {
     expect(optionNotAvailable("resolution", "360p", []).message).toContain("Available: none");
+  });
+});
+
+describe("durationStep", () => {
+  beforeEach(() => setLocale("en"));
+
+  it("clicks a chip when Flow shows duration chips", () => {
+    expect(durationStep(6, ["4s", "6s", "8s", "10s"], 4)).toBe("chip");
+  });
+
+  it("accepts the single length of a model that shows no duration chips", () => {
+    // Veo 3.1 - Lite: no chips, the settings pill reads "Video · 720p · 8s crop_16_9 x1".
+    expect(durationStep(8, [], 8)).toBe("fixed");
+  });
+
+  it("offers the single length when another one is asked for", () => {
+    expect(() => durationStep(4, [], 8)).toThrow(
+      "Flow does not offer duration 4s with the current settings. Available: 8s.",
+    );
+  });
+
+  it("offers nothing when the settings pill shows no length", () => {
+    expect(() => durationStep(8, [], undefined)).toThrow(
+      "Flow does not offer duration 8s with the current settings. Available: none.",
+    );
   });
 });
